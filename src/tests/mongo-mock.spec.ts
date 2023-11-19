@@ -21,7 +21,7 @@ describe("Mongo Mock", () => {
     });
 
     it("Should execute a query on mock db", async () => {
-        const mongoUri = globalThis.__MONGO_URI__;
+        const mongoUri = globalThis.__configProvider.get("mongo_uri", null);
         const connection = await mongoose
             .createConnection(mongoUri)
             .asPromise();
