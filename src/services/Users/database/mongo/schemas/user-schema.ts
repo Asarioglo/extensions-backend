@@ -16,6 +16,7 @@ const UserSchema = new mongoose.Schema<IUser>(
         email: {
             type: String,
             default: null,
+            unique: true,
         },
         provider: {
             type: String,
@@ -24,6 +25,7 @@ const UserSchema = new mongoose.Schema<IUser>(
         providerId: {
             type: String,
             default: null,
+            unique: true,
         },
         token: {
             type: String,
@@ -47,5 +49,13 @@ const UserSchema = new mongoose.Schema<IUser>(
     },
     { timestamps: true }
 );
+
+UserSchema.virtual("id").get(function (this: IUser) {
+    return this._id.toHexString();
+});
+
+UserSchema.set("toJSON", {
+    virtuals: true,
+});
 
 export default UserSchema;

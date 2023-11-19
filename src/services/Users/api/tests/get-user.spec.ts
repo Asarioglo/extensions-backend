@@ -26,6 +26,7 @@ describe("GET /users/me", () => {
 
     it("should return 200 OK", async () => {
         app.addCustomMiddleware("test-get-user", getUser);
+        await app.start();
         await supertest(app.getExpressApp())
             .get(`${uri_prefix}/test-get-user`)
             .set("Accept", "application/json")

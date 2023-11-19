@@ -2,6 +2,7 @@ import NodeEnvironment from "jest-environment-node";
 import { MongoMemoryServer } from "mongodb-memory-server";
 import { IConfigProvider } from "../models/i-config-provider";
 import { ConfigFactory } from "../config/config-factory";
+import dotenv from "dotenv";
 
 export default class MongoTestEnvironment extends NodeEnvironment {
     private __dbInstance: MongoMemoryServer;
@@ -9,6 +10,7 @@ export default class MongoTestEnvironment extends NodeEnvironment {
 
     constructor(config: any, context: any) {
         super(config, context);
+        dotenv.config();
         this.__configProvider = ConfigFactory.create("test");
         this.global.__configProvider = this.__configProvider;
     }

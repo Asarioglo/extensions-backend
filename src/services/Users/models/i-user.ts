@@ -1,4 +1,5 @@
 export interface IUser {
+    _id?: any;
     id: string;
     jwtId: string;
     name: string;

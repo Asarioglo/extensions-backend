@@ -34,7 +34,9 @@ export default class MongoUserRepo extends AbstractUserRepo {
         ];
         ParamUtils.requireParams(userData, required);
 
+        // TODO: Should this search by Email or ProviderId?
         let user = await this.User.findOne({ providerId: userData.providerId });
+
         // check required params
         if (!user) {
             userData = {
