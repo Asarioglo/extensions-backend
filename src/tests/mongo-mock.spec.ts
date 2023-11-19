@@ -1,5 +1,5 @@
 /**
- * @jest-environment ./src/testing/ts-mongo-test-environment.ts
+ * @jest-environment ./src/core/testing/mongo-test-environment.ts
  */
 import mongoose from "mongoose";
 import { TestConfigProvider } from "../core/config/test-config-provider";

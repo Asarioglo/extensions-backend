@@ -1,4 +1,4 @@
-import { IMicroservice } from "../core/models/i-microservice";
+import { IMicroservice } from "../models/i-microservice";
 import { Router } from "express";
 
 export class MockMicroservice implements IMicroservice {

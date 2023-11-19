@@ -1,7 +1,7 @@
 import NodeEnvironment from "jest-environment-node";
 import { MongoMemoryServer } from "mongodb-memory-server";
-import { IConfigProvider } from "../core/models/i-config-provider";
-import { ConfigFactory } from "../core/config/config-factory";
+import { IConfigProvider } from "../models/i-config-provider";
+import { ConfigFactory } from "../config/config-factory";
 
 export default class MongoTestEnvironment extends NodeEnvironment {
     private __dbInstance: MongoMemoryServer;

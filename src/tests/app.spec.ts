@@ -1,21 +1,24 @@
 import App from "../App";
 import { ConfigFactory } from "../core/config/config-factory";
 import { ConfigProvider } from "../core/config/config-provider";
-import { MockMicroservice } from "../testing/mock-microservice";
+import { MockMicroservice } from "../core/testing/mock-microservice";
 import supertest from "supertest";
 
 describe("App", () => {
     let appInstance: App;
     let configProvider = ConfigFactory.create("test");
-    let base_uri_prefix = configProvider.get("route_prefix", "");
+    let baseURLPrefix = configProvider.get("route_prefix", "");
 
     beforeEach(async () => {
         appInstance = new App(configProvider);
     });
 
     afterEach(async () => {
+        console.log("Stopping app");
         await appInstance.stop();
+        appInstance = null as any;
     });
+
     it("should be defined", () => {
         expect(App).toBeDefined();
         expect(appInstance).toBeDefined();
@@ -37,19 +40,19 @@ describe("App", () => {
     });
 
     it("Should launch and start listening", async () => {
-        await appInstance.init();
+        await appInstance.start();
         expect(appInstance.getExpressApp()).toBeDefined();
     });
 
     it("Should handle 404 routes", async () => {
-        await appInstance.init();
+        await appInstance.start();
         await supertest(appInstance.getExpressApp())
             .get("/nonexistent-route")
             .set("Accept", "application/json")
             .expect(404)
             .expect("Content-Type", /json/);
         await supertest(appInstance.getExpressApp())
-            .get(`${base_uri_prefix}}/nonexistent-route`)
+            .get(`${baseURLPrefix}/nonexistent-route`)
             .set("Accept", "application/json")
             .expect(404)
             .expect("Content-Type", /json/);
@@ -60,7 +63,7 @@ describe("App", () => {
         const mockMicroservice1 = new MockMicroservice();
         appInstance.addMicroservice("mock", mockMicroservice);
         appInstance.addMicroservice("mock1", mockMicroservice1);
-        await appInstance.init();
+        await appInstance.start();
         expect(mockMicroservice.launch_called).toBeTruthy();
         expect(mockMicroservice1.launch_called).toBeTruthy();
     });
@@ -70,23 +73,57 @@ describe("App", () => {
         const mockMicroservice1 = new MockMicroservice();
         appInstance.addMicroservice("mock", mockMicroservice);
         appInstance.addMicroservice("mock1", mockMicroservice1);
-        await appInstance.init();
+        await appInstance.start();
         await supertest(appInstance.getExpressApp())
-            .get(`${base_uri_prefix}/mock`)
+            .get(`${baseURLPrefix}/mock`)
             .expect(200);
         await supertest(appInstance.getExpressApp())
-            .get(`${base_uri_prefix}/mock1`)
+            .get(`${baseURLPrefix}/mock1`)
             .expect(200);
         // sanity
         await supertest(appInstance.getExpressApp())
-            .get(`${base_uri_prefix}/mock_some_other_route`)
+            .get(`${baseURLPrefix}/mock_some_other_route`)
             .expect(404);
+    });
+
+    it("should throw when microservice added at runtime", async () => {
+        const mockMicroservice = new MockMicroservice();
+        await appInstance.start();
+        expect(() => {
+            appInstance.addMicroservice("mock", mockMicroservice);
+        }).toThrow();
+    });
+
+    it("should stop, add microservice, start", async () => {
+        const mockMicroservice = new MockMicroservice();
+        await appInstance.start();
+        await appInstance.stop();
+        expect(() => {
+            appInstance.addMicroservice(
+                "mock_run_stop_start",
+                mockMicroservice
+            );
+        }).not.toThrow();
+        await appInstance.start();
+        await supertest(appInstance.getExpressApp())
+            .get(`${baseURLPrefix}/mock_run_stop_start`)
+            .expect(200);
+    });
+
+    it("should add custom middleware", async () => {
+        const mockMiddleware = jest.fn((req, res, next) => res.send(200));
+        appInstance.addCustomMiddleware("custom_middleware", mockMiddleware);
+        await appInstance.start();
+        await supertest(appInstance.getExpressApp())
+            .get(`${baseURLPrefix}/custom_middleware`)
+            .expect(200);
+        expect(mockMiddleware).toHaveBeenCalled();
     });
 
     it("should properly support different type of routes and responses", async () => {
         const mockMicroservice = new MockMicroservice();
         appInstance.addMicroservice("mock", mockMicroservice);
-        await appInstance.init();
+        await appInstance.start();
         let endpoints = [
             ["get", "get_success_json", 200],
             ["get", "get_success_text", 200],
@@ -100,7 +137,7 @@ describe("App", () => {
 
         for (const [method, endpoint, status] of endpoints) {
             await supertest(appInstance.getExpressApp())
-                [method](`${base_uri_prefix}/mock/${endpoint}`)
+                [method](`${baseURLPrefix}/mock/${endpoint}`)
                 .expect(status);
         }
     });

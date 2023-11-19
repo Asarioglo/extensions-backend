@@ -1,29 +1,59 @@
-import express, { Application, Request, Response } from "express";
+import express, {
+    Application,
+    Request,
+    RequestHandler,
+    Response,
+} from "express";
 import cors from "cors";
 import { IConfigProvider } from "./core/models/i-config-provider";
 import { IMicroservice } from "./core/models/i-microservice";
 
 type MicroserviceEntry = [route: string, microservice: IMicroservice];
 
+type CustomMiddleware = {
+    middleware: RequestHandler;
+    route: string;
+};
+
 export class App {
     ROUTE_PREFIX: string;
     PORT: string;
-    _services: MicroserviceEntry[] = [];
-    _express: express.Application | null = null;
-    _server: any = null;
-    _config: IConfigProvider;
+    private _services: MicroserviceEntry[] = [];
+    private _customMiddlewares: CustomMiddleware[] = [];
+    private _express: express.Application | null = null;
+    private _server: any = null;
+    private _config: IConfigProvider;
+    private _state: "INITIALIZED" | "STARTED" | "STOPPED" = "INITIALIZED";
 
     constructor(configProvider: IConfigProvider) {
         this.PORT = configProvider.get("port", null);
         if (this.PORT === null) {
-            throw new Error("PORT must be present in the config provider.");
+            throw new Error("port must be present in the config provider.");
         }
         this.ROUTE_PREFIX = configProvider.get("route_prefix", "");
         this._config = configProvider;
     }
 
     addMicroservice(route: string, microservice: IMicroservice) {
+        if (this._state === "STARTED") {
+            throw new Error(
+                "Cannot add microservice after the app has been initialized."
+            );
+        }
         this._services.push([route, microservice]);
+    }
+
+    addCustomMiddleware(route: string, middleware: RequestHandler) {
+        if (this._state === "STARTED") {
+            throw new Error(
+                "Cannot add middleware after the app has been initialized."
+            );
+        }
+        this._customMiddlewares.push({ middleware, route });
+    }
+
+    getState() {
+        return this._state;
     }
 
     getExpressApp(): Application {
@@ -47,10 +77,15 @@ export class App {
             next();
         });
 
+        //------------ Custom Middlewares ------------//
+        this._customMiddlewares.forEach(({ route, middleware }) => {
+            const combined_route = `${this.ROUTE_PREFIX}/${route}`;
+            this._express.use(combined_route, middleware);
+        });
+
         //------------ Microservices ------------//
         this._services.forEach(([route, microservice]) => {
             const combined_route = `${this.ROUTE_PREFIX}/${route}`;
-            console.log(`Initializing microservice at route ${combined_route}`);
             this._express.use(
                 combined_route,
                 microservice.launch(this._config)
@@ -65,7 +100,11 @@ export class App {
         });
     }
 
-    async init() {
+    start(): Promise<boolean> {
+        if (this._server !== null) {
+            throw new Error("Server is already running.");
+        }
+
         this._express = express();
 
         this._initUtils();
@@ -73,19 +112,22 @@ export class App {
 
         return new Promise((resolve, reject) => {
             this._server = this._express.listen(this.PORT, () => {
+                this._state = "STARTED";
                 console.log(`Server is running on port ${this.PORT}`);
                 resolve(true);
             });
         });
     }
 
-    async stop() {
+    stop(): Promise<boolean> {
         if (this._server === null) {
             return Promise.resolve(true);
         }
         return new Promise((resolve, reject) => {
             this._server?.close(() => {
+                this._state = "STOPPED";
                 this._express = null;
+                this._server = null;
                 resolve(true);
             });
         });
