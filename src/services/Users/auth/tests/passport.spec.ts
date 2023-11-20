@@ -3,27 +3,9 @@ import configurePassport from "../passport";
 import AbstractUserRepo, {
     UserCallback,
 } from "../../database/base/abstract-user-repo";
-import { IUser } from "../../models/i-user";
+import { IUser, TestUserData } from "../../models/i-user";
 import { RepoCallback } from "../../../../core/database/abstract-repository";
 import AbstractAuthProvider from "../abstract-auth-provider";
-
-const testUser: IUser = {
-    id: "test_id",
-    jwtId: "test_jwtId",
-    name: "test_name",
-    email: "test_email",
-    provider: "test_provider",
-    providerId: "test_providerId",
-    token: "test_token",
-    refreshToken: "test_refreshToken",
-    verified: false,
-    alias: "test_alias",
-    lastActive: "test_lastActive",
-
-    async save() {
-        return this;
-    },
-};
 
 namespace MockPassport {
     export const serializeUser = jest.fn();
@@ -57,23 +39,34 @@ class MockUserRepo extends AbstractUserRepo {
     findById(
         id: string,
         callback?: RepoCallback<IUser> | undefined
-    ): void | Promise<IUser> {
-        if (!callback) return Promise.resolve(testUser);
-        else callback(null, testUser);
+    ): Promise<IUser> {
+        if (callback) callback(null, TestUserData);
+        return Promise.resolve(TestUserData);
     }
 
     findOrCreate(
         queryData: Partial<IUser>,
         callback?: RepoCallback<IUser> | undefined
-    ): void | Promise<IUser> {
-        if (!callback) return Promise.resolve(testUser);
+    ): Promise<IUser> {
+        if (callback) callback(null, TestUserData);
+        return Promise.resolve(TestUserData);
     }
 
     findOne(
         queryData: Partial<IUser>,
         callback: RepoCallback<IUser>
-    ): void | Promise<IUser> {
-        return Promise.resolve(testUser);
+    ): Promise<IUser> {
+        if (callback) callback(null, TestUserData);
+        return Promise.resolve(TestUserData);
+    }
+
+    update(
+        queryData: Partial<IUser>,
+        updateData: Partial<IUser>,
+        callback?: RepoCallback<IUser> | undefined
+    ): Promise<IUser> {
+        if (callback) callback(null, TestUserData);
+        return Promise.resolve(TestUserData);
     }
 }
 
@@ -89,16 +82,16 @@ describe("passport", () => {
     it("should serialize and deserialize user by ID", (done) => {
         configurePassport(TestPassport as any, new MockUserRepo(), []);
         let xpressDone = jest.fn();
-        const user = TestPassport.serializeUserFn(testUser, xpressDone);
+        const user = TestPassport.serializeUserFn(TestUserData, xpressDone);
         expect(xpressDone).toHaveBeenCalled();
-        expect(xpressDone).toHaveBeenCalledWith(null, testUser.id);
+        expect(xpressDone).toHaveBeenCalledWith(null, TestUserData.id);
 
         let doneAsyncCallback = (err: any, user: IUser) => {
             expect(err).toBeNull();
-            expect(user).toEqual(testUser);
+            expect(user).toEqual(TestUserData);
             done();
         };
-        TestPassport.deserializeUserFn(testUser.id, doneAsyncCallback);
+        TestPassport.deserializeUserFn(TestUserData.id, doneAsyncCallback);
     });
 
     it("should iterate through providers and add passport strategies", () => {

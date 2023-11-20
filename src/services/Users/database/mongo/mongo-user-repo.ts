@@ -4,7 +4,7 @@ import UserSchema from "./schemas/user-schema";
 import { IUser } from "../../models/i-user";
 import { ParamUtils } from "../../../../core/utils/param-utils";
 
-type UserCallback = (err: any, user: IUser | null) => void;
+export type UserCallback = (err: any, user: IUser | null) => void;
 
 export default class MongoUserRepo extends AbstractUserRepo {
     private connection: mongoose.Connection;
@@ -20,7 +20,7 @@ export default class MongoUserRepo extends AbstractUserRepo {
         return userData.email.substring(0, 2).toUpperCase();
     }
 
-    async _findOrCreate(
+    async findOrCreate(
         userData: Partial<IUser>,
         callback?: UserCallback
     ): Promise<IUser> {
@@ -32,59 +32,128 @@ export default class MongoUserRepo extends AbstractUserRepo {
             "refreshToken",
             "name",
         ];
-        ParamUtils.requireParams(userData, required);
 
-        // TODO: Should this search by Email or ProviderId?
-        let user = await this.User.findOne({ providerId: userData.providerId });
+        let user: any = null;
+
+        try {
+            ParamUtils.requireParams(userData, required);
+
+            // TODO: Should this search by Email or ProviderId?
+            user = await this.User.findOne({
+                providerId: userData.providerId,
+            });
+        } catch (err) {
+            if (callback) {
+                callback(err, null);
+                return;
+            } else {
+                throw err;
+            }
+        }
 
         // check required params
         if (!user) {
             userData = {
                 ...userData,
-                lastActive: new Date().toISOString(),
+                lastActive: new Date(),
                 verified: true,
                 alias: this._createAlias(userData),
             };
-            user = await this.User.create(userData);
-        }
-        return user;
-    }
-
-    findOrCreate(
-        userData: Partial<IUser>,
-        callback?: UserCallback
-    ): void | Promise<IUser> {
-        if (callback) {
-            this._findOrCreate(userData)
-                .then((user: IUser) => {
-                    callback(null, user);
-                })
-                .catch((err: any) => {
+            try {
+                user = await this.User.create(userData);
+            } catch (err) {
+                if (callback) {
                     callback(err, null);
-                });
-        } else {
-            return this._findOrCreate(userData);
+                    return;
+                } else {
+                    throw err;
+                }
+            }
         }
+        if (callback) {
+            callback(null, user.toJSON() as IUser);
+        }
+        return user.toJSON() as IUser;
     }
 
-    findById(id: string, callback?: UserCallback): void | Promise<IUser> {
+    async findById(id: string, callback?: UserCallback): Promise<IUser> {
         // Implement the logic to find a user by ID
+        try {
+            const user = await this.User.findById(id);
+            if (user) {
+                const userData = user.toJSON() as IUser;
+                if (callback) {
+                    callback(null, userData);
+                }
+                return userData;
+            } else {
+                if (callback) {
+                    callback(null, null);
+                }
+                return null;
+            }
+        } catch (err) {
+            if (callback) {
+                callback(err, null);
+            } else {
+                throw err;
+            }
+        }
     }
 
-    findOne(
+    async findOne(
         queryData: Partial<IUser>,
-        callback: UserCallback
-    ): Promise<IUser> | void {
-        if (callback) {
-            this.User.findOne(queryData)
-                .then((user: IUser | null) => {
-                    callback(null, user);
-                })
-                .catch((err: any) => {
-                    callback(err, null);
-                });
-        } else {
-            return this.User.findOne(queryData);
+        callback?: UserCallback
+    ): Promise<IUser> {
+        try {
+            const user = await this.User.findOne(queryData);
+            if (user) {
+                const userData = user.toJSON() as IUser;
+                if (callback) {
+                    callback(null, userData);
+                }
+                return userData;
+            } else {
+                if (callback) {
+                    callback(null, null);
+                }
+                return null;
+            }
+        } catch (err) {
+            if (callback) {
+                callback(err, null);
+            } else {
+                throw err;
+            }
+        }
+    }
+
+    async update(
+        queryData: Partial<IUser>,
+        updateData: Partial<IUser>,
+        callback?: UserCallback
+    ): Promise<IUser> {
+        try {
+            ParamUtils.requireParams(queryData, ["providerId", "email"]);
+
+            const user = await this.User.findOneAndUpdate(
+                queryData,
+                updateData,
+                { new: true } // to return the updated document instead of the original
+            );
+            if (user) {
+                const userData = user.toJSON() as IUser;
+                if (callback) {
+                    callback(null, userData);
+                }
+                return userData;
+            }
+        } catch (err) {
+            if (callback) {
+                callback(err, null);
+            } else {
+                throw err;
+            }
         }
     }
 }

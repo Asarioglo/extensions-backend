@@ -1,6 +1,6 @@
 import { IUser } from "../../../models/i-user";
 
-export default {
+const TestUserData = {
     id: "test_id",
     jwtId: "test_jwtId",
     name: "test_name",
@@ -11,7 +11,9 @@ export default {
     refreshToken: "test_refreshToken",
     verified: false,
     alias: "test_alias",
-    lastActive: "test_lastActive",
-
-    save: jest.fn(),
+    lastActive: new Date(),
+    createdAt: new Date(),
+    updatedAt: new Date(),
 } as IUser;
+
+export default TestUserData;

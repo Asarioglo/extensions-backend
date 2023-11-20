@@ -3,8 +3,8 @@
  */
 
 import mongoose, { mongo } from "mongoose";
-import MongoUserRepo from "../mongo-user-repo";
-import TestUserData from "./test-user-data";
+import MongoUserRepo, { UserCallback } from "../mongo-user-repo";
+import { IUser, TestUserData } from "../../../models/i-user";
 
 describe("Mongo User Repository", () => {
     let connection: mongoose.Connection | null = null;
@@ -33,14 +33,13 @@ describe("Mongo User Repository", () => {
         expect(models).toContain("User");
     });
 
-    it("Should create a user", async () => {
+    it("Should create a user and return promise", async () => {
         if (!connection) throw new Error("Connection did not initialize");
 
         const repo = new MongoUserRepo(connection);
         const user = await repo.findOrCreate(TestUserData);
         expect(user).toBeDefined();
-        const userData = user.toObject();
-        expect(user).toHaveProperty("id", TestUserData.id);
+        expect(user).toHaveProperty("id");
         expect(user).toHaveProperty("jwtId", TestUserData.jwtId);
         expect(user).toHaveProperty("name", TestUserData.name);
         expect(user).toHaveProperty("email", TestUserData.email);
@@ -53,6 +52,215 @@ describe("Mongo User Repository", () => {
             "alias",
             TestUserData.email.substring(0, 2).toUpperCase()
         );
-        expect(user).toHaveProperty("lastActive", TestUserData.lastActive);
+        expect(user).toHaveProperty("lastActive");
+        expect(user.lastActive).toBeInstanceOf(Date);
+        expect(user).toHaveProperty("createdAt");
+        expect(user.createdAt).toBeInstanceOf(Date);
+        expect(user).toHaveProperty("updatedAt");
+        expect(user.updatedAt).toBeInstanceOf(Date);
+    });
+
+    it("Should create a user and return callback", async () => {
+        if (!connection) throw new Error("Connection did not initialize");
+        const cb = jest.fn() as UserCallback;
+        const repo = new MongoUserRepo(connection);
+        const user = await repo.findOrCreate(TestUserData, cb);
+        expect(cb).toHaveBeenCalled();
+        expect(cb).toHaveBeenCalledWith(null, user);
+    });
+
+    it("Should fail gracefully creating a user", async () => {
+        if (!connection) throw new Error("Connection did not initialize");
+        const repo = new MongoUserRepo(connection);
+        await expect(repo.findOrCreate({} as IUser)).rejects.toThrow();
+        const noParamsCb = jest.fn() as UserCallback;
+        await repo.findOrCreate({} as IUser, noParamsCb);
+        expect(noParamsCb).toHaveBeenCalled();
+        expect(noParamsCb).toHaveBeenCalledWith(expect.any(Error), null);
+        // passing a non-string value to providerId will make it fail at
+        // lookup time
+        await expect(
+            repo.findOrCreate({ ...TestUserData, providerId: {} } as any)
+        ).rejects.toThrow();
+        const cb = jest.fn() as UserCallback;
+        await repo.findOrCreate({ ...TestUserData, providerId: {} } as any, cb);
+        expect(cb).toHaveBeenCalled();
+        expect(cb).toHaveBeenCalledWith(expect.any(Error), null);
+
+        // passing a non-string value to name will make it fail at create time
+        await expect(
+            repo.findOrCreate({
+                ...TestUserData,
+                providerId: "123",
+                name: {},
+            } as any)
+        ).rejects.toThrow();
+        const cb2 = jest.fn() as UserCallback;
+        await repo.findOrCreate(
+            { ...TestUserData, providerId: "123", name: {} } as any,
+            cb2
+        );
+        expect(cb2).toHaveBeenCalled();
+        expect(cb2).toHaveBeenCalledWith(expect.any(Error), null);
+    });
+
+    it("Should find a user instead of creating", async () => {
+        if (!connection) throw new Error("Connection did not initialize");
+        const repo = new MongoUserRepo(connection);
+        const user = await repo.findOrCreate(TestUserData);
+        const userDataCache = { ...TestUserData, name: "new_name" };
+        // will only use providerId to find user, so this should return the
+        // same user without the new_name
+        const user2 = await repo.findOrCreate(userDataCache);
+        expect(user2).toBeDefined();
+        expect(user2).toEqual(user);
+        expect(user2.name).not.toEqual(userDataCache.name);
+    });
+
+    it("Should find a user by id", async () => {
+        if (!connection) throw new Error("Connection did not initialize");
+        const repo = new MongoUserRepo(connection);
+        const user = await repo.findOrCreate(TestUserData);
+        const user2 = await repo.findById(user.id);
+        expect(user2).toBeDefined();
+        expect(user2).toEqual(user);
+    });
+
+    it("Should find a user by id with callback", async () => {
+        if (!connection) throw new Error("Connection did not initialize");
+        const repo = new MongoUserRepo(connection);
+        const user = await repo.findOrCreate(TestUserData);
+        const cb = jest.fn() as UserCallback;
+        const user2 = await repo.findById(user.id, cb);
+        expect(cb).toHaveBeenCalled();
+        expect(cb).toHaveBeenCalledWith(null, user);
+        expect(user2).toBeDefined();
+        expect(user2).toEqual(user);
+    });
+
+    it("Should fail gracefully finding a user by id", async () => {
+        if (!connection) throw new Error("Connection did not initialize");
+        const repo = new MongoUserRepo(connection);
+        await expect(repo.findById("")).rejects.toThrow();
+        const cb = jest.fn() as UserCallback;
+        await repo.findById("", cb);
+        expect(cb).toHaveBeenCalled();
+        expect(cb).toHaveBeenCalledWith(expect.any(Error), null);
+    });
+
+    it("Should not find a user", async () => {
+        if (!connection) throw new Error("Connection did not initialize");
+        const repo = new MongoUserRepo(connection);
+        const user = await repo.findById("123456789012345678901234");
+        expect(user).toBeNull();
+        const cb = jest.fn() as UserCallback;
+        const user2 = await repo.findById("123456789012345678901234", cb);
+        expect(cb).toHaveBeenCalled();
+        expect(cb).toHaveBeenCalledWith(null, null);
+    });
+
+    it("Should find a user by other parameters", async () => {
+        if (!connection) throw new Error("Connection did not initialize");
+        const repo = new MongoUserRepo(connection);
+        const user = await repo.findOrCreate(TestUserData);
+        const user2 = await repo.findOne({
+            name: TestUserData.name,
+            email: TestUserData.email,
+        });
+        expect(user2).toBeDefined();
+        expect(user2).toEqual(user);
+
+        const cb = jest.fn() as UserCallback;
+        const user3 = await repo.findOne(
+            {
+                name: TestUserData.name,
+                email: TestUserData.email,
+            },
+            cb
+        );
+        expect(cb).toHaveBeenCalled();
+        expect(cb).toHaveBeenCalledWith(null, user);
+    });
+
+    it("Should not find a user by other parameters", async () => {
+        if (!connection) throw new Error("Connection did not initialize");
+        const repo = new MongoUserRepo(connection);
+        const user = await repo.findOrCreate(TestUserData);
+        const user2 = await repo.findOne({
+            name: TestUserData.name,
+            email: "test@gmail.com",
+        });
+        expect(user2).toBeNull();
+
+        const cb = jest.fn() as UserCallback;
+        const user3 = await repo.findOne(
+            {
+                name: TestUserData.name,
+                email: "test@gmail.com",
+            },
+            cb
+        );
+        expect(cb).toHaveBeenCalled();
+        expect(cb).toHaveBeenCalledWith(null, null);
+    });
+
+    it("Should fail gracefully finding a user by other parameters", async () => {
+        if (!connection) throw new Error("Connection did not initialize");
+        const repo = new MongoUserRepo(connection);
+        await expect(repo.findOne({ name: {} } as any)).rejects.toThrow();
+        const cb = jest.fn() as UserCallback;
+        await repo.findOne({ name: {} } as any, cb);
+        expect(cb).toHaveBeenCalled();
+        expect(cb).toHaveBeenCalledWith(expect.any(Error), null);
+    });
+
+    it("Should update a user", async () => {
+        if (!connection) throw new Error("Connection did not initialize");
+        const repo = new MongoUserRepo(connection);
+        const user = await repo.findOrCreate(TestUserData);
+        const user2 = await repo.update(
+            { providerId: TestUserData.providerId, email: TestUserData.email },
+            {
+                name: "new_name",
+                email: "new_email",
+            }
+        );
+        expect(user2).toBeDefined();
+        expect(user2.name).toEqual("new_name");
+        const user3 = await repo.findById(user.id);
+        expect(user3).toBeDefined();
+        expect(user3).toEqual(user2);
+    });
+
+    it("Should fail gracefully updating a user", async () => {
+        // -------------- Wrong Required Params --------------
+        if (!connection) throw new Error("Connection did not initialize");
+        const repo = new MongoUserRepo(connection);
+        await expect(
+            repo.update({ name: {} } as any, { name: "new_name" })
+        ).rejects.toThrow();
+        const cb = jest.fn() as UserCallback;
+        await repo.update({ name: {} } as any, { name: "new_name" }, cb);
+        expect(cb).toHaveBeenCalled();
+        expect(cb).toHaveBeenCalledWith(expect.any(Error), null);
+        // -------------- Wrong Update Params --------------
+        await expect(
+            repo.update(
+                {
+                    providerId: TestUserData.providerId,
+                    email: TestUserData.email,
+                },
+                { name: {} } as any
+            )
+        ).rejects.toThrow();
+        const cb2 = jest.fn() as UserCallback;
+        await repo.update(
+            {
+                providerId: TestUserData.providerId,
+                email: TestUserData.email,
+            },
+            { name: {} } as any,
+            cb2
+        );
     });
 });
