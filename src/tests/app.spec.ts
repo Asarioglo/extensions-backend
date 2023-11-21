@@ -1,6 +1,11 @@
+/**
+ * @jest-environment ./src/core/testing/test-env-with-config.ts
+ */
+
 import App from "../App";
 import { ConfigFactory } from "../core/config/config-factory";
 import { ConfigProvider } from "../core/config/config-provider";
+import { ILogger } from "../core/logging/i-logger";
 import { MockMicroservice } from "../core/testing/mock-microservice";
 import supertest from "supertest";
 
@@ -10,11 +15,13 @@ describe("App", () => {
     let baseURLPrefix = configProvider.get("route_prefix", "");
 
     beforeEach(async () => {
-        appInstance = new App(configProvider);
+        appInstance = new App(
+            globalThis.__configProvider as ConfigProvider,
+            globalThis.__logger as ILogger
+        );
     });
 
     afterEach(async () => {
-        console.log("Stopping app");
         await appInstance.stop();
         appInstance = null as any;
     });
@@ -31,11 +38,11 @@ describe("App", () => {
     it("Should fail with no required configs", () => {
         const configProvider = new ConfigProvider();
         expect(() => {
-            new App(configProvider);
+            new App(configProvider, globalThis.__logger as ILogger);
         }).toThrow();
         configProvider.set("port", "1234");
         expect(() => {
-            new App(configProvider);
+            new App(configProvider, globalThis.__logger as ILogger);
         }).not.toThrow();
     });
 
@@ -111,7 +118,7 @@ describe("App", () => {
     });
 
     it("should add custom middleware", async () => {
-        const mockMiddleware = jest.fn((req, res, next) => res.send(200));
+        const mockMiddleware = jest.fn((req, res, next) => res.sendStatus(200));
         appInstance.addCustomMiddleware("custom_middleware", mockMiddleware);
         await appInstance.start();
         await supertest(appInstance.getExpressApp())

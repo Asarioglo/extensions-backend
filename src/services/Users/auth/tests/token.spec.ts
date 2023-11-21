@@ -1,3 +1,4 @@
+import { ILogger } from "../../../../core/logging/i-logger";
 import { IUser } from "../../models/i-user";
 import Tokens, { TokenError, TokenPayload } from "../tokens";
 import jwt from "jsonwebtoken";
@@ -35,7 +36,11 @@ describe("Tokens", () => {
     it("Should decode a token correctly", () => {
         const tokenObj = Tokens.createToken(secret, mockUser as IUser);
         const { token, id } = tokenObj;
-        const decoded: TokenPayload = Tokens.decodeToken(token, secret);
+        const decoded: TokenPayload = Tokens.decodeToken(
+            token,
+            secret,
+            globalThis.__logger as ILogger
+        );
         expect(decoded).toBeTruthy();
         expect(decoded).toHaveProperty("userId");
         expect(decoded).toHaveProperty("exp");
@@ -46,7 +51,11 @@ describe("Tokens", () => {
         const now = Math.floor(Date.now() / 1000);
         const tokenObj = Tokens.createToken(secret, mockUser as IUser);
         const { token, id } = tokenObj;
-        const decoded: TokenPayload = Tokens.decodeToken(token, secret);
+        const decoded: TokenPayload = Tokens.decodeToken(
+            token,
+            secret,
+            globalThis.__logger as ILogger
+        );
         expect(decoded.exp).toBe(now + 60 * 60);
     });
 
@@ -54,7 +63,11 @@ describe("Tokens", () => {
         const now = Math.floor(Date.now() / 1000);
         const tokenObj = Tokens.createToken(secret, mockUser as IUser, 10);
         const { token, id } = tokenObj;
-        const decoded: TokenPayload = Tokens.decodeToken(token, secret);
+        const decoded: TokenPayload = Tokens.decodeToken(
+            token,
+            secret,
+            globalThis.__logger as ILogger
+        );
         expect(decoded).toBeTruthy();
         expect(decoded).toHaveProperty("userId");
         expect(decoded).toHaveProperty("exp");
@@ -66,19 +79,31 @@ describe("Tokens", () => {
         const tokenObj = Tokens.createToken(secret, mockUser as IUser, -1);
         const { token } = tokenObj;
         expect(() => {
-            Tokens.decodeToken(token, secret);
+            Tokens.decodeToken(token, secret, globalThis.__logger as ILogger);
         }).toThrow();
         try {
-            Tokens.decodeToken(token, secret);
+            Tokens.decodeToken(token, secret, globalThis.__logger as ILogger);
         } catch (err) {
             expect(err).toBeInstanceOf(TokenError);
         }
     });
 
+    dquote> Got rid of the "abstract" methods for repositories, everything should be preserved 
+dquote> in interfaces unless absolutely necessary. 
+dquote> Added a dummy logger to the testing environment, it was needed, after all.           
+dquote> No need to pollute the console and create files with error logs when things break.
+dquote> Logging is tested on its own. Potentially we want to make that dummy logger into a 
+dquote> mock and test that logging works, but at the moment that adds a lot of complexity.
+dquote> Changed some names, makes more sense to me.
+
     it("Should reject tokens with invalid signature", () => {
         const tokenObj = Tokens.createToken(secret, mockUser as IUser);
         const { token, id } = tokenObj;
-        const decoded: TokenPayload = Tokens.decodeToken(token, secret);
+        const decoded: TokenPayload = Tokens.decodeToken(
+            token,
+            secret,
+            globalThis.__logger as ILogger
+        );
         expect(decoded).toBeTruthy();
         expect(decoded).toHaveProperty("userId");
         expect(decoded).toHaveProperty("exp");
@@ -86,14 +111,22 @@ describe("Tokens", () => {
         // change the secret
         const invalidSecret = "invalid_secret";
         expect(() => {
-            Tokens.decodeToken(token, invalidSecret);
+            Tokens.decodeToken(
+                token,
+                invalidSecret,
+                globalThis.__logger as ILogger
+            );
         }).toThrow();
     });
 
     it("Should reject token with mismatching jtis", () => {
         const tokenObj = Tokens.createToken(secret, mockUser as IUser);
         const { token, id } = tokenObj;
-        const decoded: TokenPayload = Tokens.decodeToken(token, secret);
+        const decoded: TokenPayload = Tokens.decodeToken(
+            token,
+            secret,
+            globalThis.__logger as ILogger
+        );
         expect(decoded.jti).toBe(id);
         mockUser.jwtId = id;
         expect(Tokens.additionalValidation(decoded, mockUser as IUser)).toBe(
@@ -123,7 +156,11 @@ describe("Tokens", () => {
         );
         const { token, id } = tokenObj;
         expect(id).toBe(mockUser.jwtId);
-        const payload = Tokens.decodeToken(token, secret);
+        const payload = Tokens.decodeToken(
+            token,
+            secret,
+            globalThis.__logger as ILogger
+        );
         expect(payload.jti).toBe(id);
     });
 });

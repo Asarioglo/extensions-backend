@@ -5,8 +5,8 @@ import express, {
     Response,
 } from "express";
 import cors from "cors";
-import { IConfigProvider } from "./core/models/i-config-provider";
-import { IMicroservice } from "./core/models/i-microservice";
+import { IConfigProvider } from "./core/interfaces/i-config-provider";
+import { IMicroservice } from "./core/interfaces/i-microservice";
 import { ILogger } from "./core/logging/i-logger";
 
 type MicroserviceEntry = [route: string, microservice: IMicroservice];
@@ -107,7 +107,7 @@ export class App {
             const combined_route = `${this.ROUTE_PREFIX}/${route}`;
             this._express.use(
                 combined_route,
-                microservice.launch(this._config)
+                microservice.launch(this._config, this._logger)
             );
         });
 

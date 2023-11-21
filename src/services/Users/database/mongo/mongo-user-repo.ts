@@ -1,29 +1,26 @@
-import mongoose, { Document, Model } from "mongoose";
-import AbstractUserRepo from "../base/abstract-user-repo";
+import mongoose, { Model } from "mongoose";
+import IUserRepository, { UserCallback } from "../base/i-user-repository";
 import UserSchema from "./schemas/user-schema";
 import { IUser } from "../../models/i-user";
 import { ParamUtils } from "../../../../core/utils/param-utils";
 
-export type UserCallback = (err: any, user: IUser | null) => void;
-
-export default class MongoUserRepo extends AbstractUserRepo {
+export default class MongoUserRepo implements IUserRepository {
     private connection: mongoose.Connection;
     private User: Model<IUser>;
 
     constructor(connection: mongoose.Connection) {
-        super();
         this.connection = connection;
         this.User = this.connection.model("User", UserSchema);
     }
 
-    _createAlias(userData: Partial<IUser>): string {
-        return userData.email.substring(0, 2).toUpperCase();
+    _createAlias(userData: Partial<IUser>): string | null {
+        return userData.email?.substring(0, 2).toUpperCase() || null;
     }
 
     async findOrCreate(
         userData: Partial<IUser>,
         callback?: UserCallback
-    ): Promise<IUser> {
+    ): Promise<IUser | null> {
         const required = [
             "providerId",
             "provider",
@@ -45,7 +42,7 @@ export default class MongoUserRepo extends AbstractUserRepo {
         } catch (err) {
             if (callback) {
                 callback(err, null);
-                return;
+                return null;
             } else {
                 throw err;
             }
@@ -57,14 +54,14 @@ export default class MongoUserRepo extends AbstractUserRepo {
                 ...userData,
                 lastActive: new Date(),
                 verified: true,
-                alias: this._createAlias(userData),
+                alias: this._createAlias(userData)!,
             };
             try {
                 user = await this.User.create(userData);
             } catch (err) {
                 if (callback) {
                     callback(err, null);
-                    return;
+                    return null;
                 } else {
                     throw err;
                 }
@@ -76,7 +73,7 @@ export default class MongoUserRepo extends AbstractUserRepo {
         return user.toJSON() as IUser;
     }
 
-    async findById(id: string, callback?: UserCallback): Promise<IUser> {
+    async findById(id: string, callback?: UserCallback): Promise<IUser | null> {
         // Implement the logic to find a user by ID
         try {
             const user = await this.User.findById(id);
@@ -95,6 +92,7 @@ export default class MongoUserRepo extends AbstractUserRepo {
         } catch (err) {
             if (callback) {
                 callback(err, null);
+                return null;
             } else {
                 throw err;
             }
@@ -132,7 +130,7 @@ export default class MongoUserRepo extends AbstractUserRepo {
         queryData: Partial<IUser>,
         updateData: Partial<IUser>,
         callback?: UserCallback
-    ): Promise<IUser> {
+    ): Promise<IUser | null> {
         try {
             ParamUtils.requireParams(queryData, ["providerId", "email"]);
 
@@ -147,10 +145,16 @@ export default class MongoUserRepo extends AbstractUserRepo {
                     callback(null, userData);
                 }
                 return userData;
+            } else {
+                if (callback) {
+                    callback(null, null);
+                }
+                return null;
             }
         } catch (err) {
             if (callback) {
                 callback(err, null);
+                return null;
             } else {
                 throw err;
             }

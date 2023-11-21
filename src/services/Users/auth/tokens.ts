@@ -1,7 +1,7 @@
-import AbstractUserRepo from "../database/base/abstract-user-repo";
 import { IUser } from "../models/i-user";
 import jwt from "jsonwebtoken";
 import AbstractAuthProvider from "./abstract-auth-provider";
+import { ILogger } from "../../../core/logging/i-logger";
 
 export type TokenPayload = {
     userId: string;
@@ -11,9 +11,9 @@ export type TokenPayload = {
 
 export class TokenError extends Error {
     public type: Tokens.ErrorType;
-    public user: IUser;
+    public user: IUser | null;
 
-    constructor(type: Tokens.ErrorType, user: IUser, message: string) {
+    constructor(type: Tokens.ErrorType, user: IUser | null, message: string) {
         super(message);
         this.name = "TokenValidationError";
         this.type = type;
@@ -87,7 +87,11 @@ namespace Tokens {
         return true;
     }
 
-    export function decodeToken(token: string, secret: string): TokenPayload {
+    export function decodeToken(
+        token: string,
+        secret: string,
+        logger: ILogger
+    ): TokenPayload {
         try {
             const decoded = jwt.verify(token, secret, {
                 algorithms: ["HS256"],
@@ -101,7 +105,7 @@ namespace Tokens {
                     "Token expired, needs to be refreshed"
                 );
             } else {
-                console.error(e.message);
+                logger.error(e.message);
                 throw new Error(`Token validation failed: ${e.message}`);
             }
         }
@@ -109,7 +113,8 @@ namespace Tokens {
 
     export async function refreshProviderToken(
         user: IUser,
-        providers: AbstractAuthProvider[]
+        providers: AbstractAuthProvider[],
+        logger: ILogger
     ) {
         const provider = providers.find((p) => p.name === user.provider);
         if (!provider) {
@@ -119,7 +124,7 @@ namespace Tokens {
                 "Provider could not be determined"
             );
         }
-        let newAccessToken: string = null;
+        let newAccessToken: string | null = null;
         try {
             newAccessToken = await provider.refreshToken(user.refreshToken);
         } catch (refreshError) {
@@ -131,7 +136,7 @@ namespace Tokens {
         }
         if (!newAccessToken) {
             // Should not happen
-            console.log(
+            logger.warn(
                 `Weird, this shouldn't happen. Refreshing token didn't
                 fail, but no new token was returned`
             );

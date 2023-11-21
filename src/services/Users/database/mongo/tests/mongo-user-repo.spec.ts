@@ -3,8 +3,9 @@
  */
 
 import mongoose, { mongo } from "mongoose";
-import MongoUserRepo, { UserCallback } from "../mongo-user-repo";
+import MongoUserRepo from "../mongo-user-repo";
 import { IUser, TestUserData } from "../../../models/i-user";
+import { UserCallback } from "../../base/i-user-repository";
 
 describe("Mongo User Repository", () => {
     let connection: mongoose.Connection | null = null;
@@ -39,6 +40,7 @@ describe("Mongo User Repository", () => {
         const repo = new MongoUserRepo(connection);
         const user = await repo.findOrCreate(TestUserData);
         expect(user).toBeDefined();
+        if (!user) throw new Error("User did not initialize");
         expect(user).toHaveProperty("id");
         expect(user).toHaveProperty("jwtId", TestUserData.jwtId);
         expect(user).toHaveProperty("name", TestUserData.name);
@@ -113,6 +115,8 @@ describe("Mongo User Repository", () => {
         // same user without the new_name
         const user2 = await repo.findOrCreate(userDataCache);
         expect(user2).toBeDefined();
+        // to fool typescript
+        if (!user2) throw new Error("User did not initialize");
         expect(user2).toEqual(user);
         expect(user2.name).not.toEqual(userDataCache.name);
     });
@@ -121,8 +125,10 @@ describe("Mongo User Repository", () => {
         if (!connection) throw new Error("Connection did not initialize");
         const repo = new MongoUserRepo(connection);
         const user = await repo.findOrCreate(TestUserData);
+        expect(user).toBeTruthy();
+        if (!user) throw new Error("User did not initialize");
         const user2 = await repo.findById(user.id);
-        expect(user2).toBeDefined();
+        expect(user2).toBeTruthy();
         expect(user2).toEqual(user);
     });
 
@@ -130,11 +136,14 @@ describe("Mongo User Repository", () => {
         if (!connection) throw new Error("Connection did not initialize");
         const repo = new MongoUserRepo(connection);
         const user = await repo.findOrCreate(TestUserData);
+        expect(user).toBeTruthy();
+        if (!user) throw new Error("User did not initialize");
+
         const cb = jest.fn() as UserCallback;
         const user2 = await repo.findById(user.id, cb);
         expect(cb).toHaveBeenCalled();
         expect(cb).toHaveBeenCalledWith(null, user);
-        expect(user2).toBeDefined();
+        expect(user2).toBeTruthy();
         expect(user2).toEqual(user);
     });
 
@@ -218,6 +227,8 @@ describe("Mongo User Repository", () => {
         if (!connection) throw new Error("Connection did not initialize");
         const repo = new MongoUserRepo(connection);
         const user = await repo.findOrCreate(TestUserData);
+        expect(user).toBeTruthy();
+        if (!user) throw new Error("User did not initialize");
         const user2 = await repo.update(
             { providerId: TestUserData.providerId, email: TestUserData.email },
             {
@@ -225,7 +236,8 @@ describe("Mongo User Repository", () => {
                 email: "new_email",
             }
         );
-        expect(user2).toBeDefined();
+        expect(user2).toBeTruthy();
+        if (!user2) throw new Error("User did not initialize");
         expect(user2.name).toEqual("new_name");
         const user3 = await repo.findById(user.id);
         expect(user3).toBeDefined();

@@ -5,21 +5,31 @@ import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import passport from "passport";
 import { google } from "googleapis";
 import { logger } from "../logger.js";
+import IUserRepository from "../../database/base/i-user-repository.js";
+
+export type GoogleCredentials = {
+    clientID: string;
+    clientSecret: string;
+    callbackURL: string;
+};
 
 export default class GoogleProvider extends AbstractAuthProvider {
-    constructor() {
-        super();
-        this.clientID = process.env.GOOGLE_CLIENT_ID;
-        this.clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-        this.callbackURL = process.env.GOOGLE_CALLBACK;
+    private clientID: string;
+    private clientSecret: string;
+    private callbackURL: string;
+
+    constructor(name: string, credentials: GoogleCredentials) {
+        super(name);
+        this.clientID = credentials.clientID;
+        this.clientSecret = credentials.clientSecret;
+        this.callbackURL = credentials.callbackURL;
         this.name = "google";
     }
 
-    static getName() {
-        return "google";
-    }
-
-    addPassportStrategy(passport) {
+    addPassportStrategy(
+        passport: passport.PassportStatic,
+        userRepo: IUserRepository
+    ) {
         passport.use(
             new GoogleStrategy(
                 {
@@ -29,79 +39,31 @@ export default class GoogleProvider extends AbstractAuthProvider {
                     passReqToCallback: true,
                 },
                 async function (req, accessToken, refreshToken, profile, done) {
-                    if (req.session.root_user) {
-                        if (profile.id === req.session.root_user.providerId) {
-                            logger.info("Adding root user as a sub user", {
-                                uuid: req.uuid,
-                            });
-                            const tmpUser = req.session.root_user;
-                            req.session.root_user = null;
-                            delete req.session.root_user;
-                            return done(null, tmpUser);
-                        }
-                        try {
-                            let sender = await Sender.findOrCreate(
-                                req.session.root_user._id,
-                                profile.id,
-                                "google",
-                                profile.emails[0].value,
-                                accessToken,
-                                refreshToken,
-                                profile.displayName
+                    try {
+                        const user = await User.findOrCreate(
+                            profile.id,
+                            "google",
+                            profile.emails[0].value,
+                            accessToken,
+                            refreshToken,
+                            profile.displayName
+                        );
+                        if (!user) {
+                            logger.error(
+                                "Couldn't create user. Object returned form findOrCreate is undefined",
+                                { uuid: req.uuid }
                             );
-                            if (!sender) {
-                                logger.error(
-                                    "Couldn't create sender. Object returned form findOrCreate is undefined",
-                                    {
-                                        uuid: req.uuid,
-                                    }
-                                );
-                                return done(
-                                    new Error("Couldn't create sender")
-                                );
-                            }
-                            req.session.root_user = null;
-                            delete req.session.root_user;
-
-                            done(null, sender);
-                        } catch (err) {
-                            logger.error("Error creating sender: ", {
-                                meta: {
-                                    errorObject: err,
-                                },
-                                uuid: req.uuid,
-                            });
-                            req.session.root_user = null;
-                            delete req.session.root_user;
-                            return done(err);
+                            throw new Error("Couldn't create user");
                         }
-                    } else {
-                        try {
-                            const user = await User.findOrCreate(
-                                profile.id,
-                                "google",
-                                profile.emails[0].value,
-                                accessToken,
-                                refreshToken,
-                                profile.displayName
-                            );
-                            if (!user) {
-                                logger.error(
-                                    "Couldn't create user. Object returned form findOrCreate is undefined",
-                                    { uuid: req.uuid }
-                                );
-                                throw new Error("Couldn't create user");
-                            }
-                            done(null, user);
-                        } catch (err) {
-                            logger.error("Error creating user: ", {
-                                meta: {
-                                    errorObject: err,
-                                },
-                                uuid: req.uuid,
-                            });
-                            return done(err);
-                        }
+                        done(null, user);
+                    } catch (err) {
+                        logger.error("Error creating user: ", {
+                            meta: {
+                                errorObject: err,
+                            },
+                            uuid: req.uuid,
+                        });
+                        return done(err);
                     }
                 }
             )

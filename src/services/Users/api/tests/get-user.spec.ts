@@ -4,7 +4,7 @@
 import "jest";
 import supertest from "supertest";
 import { StatusCodes } from "http-status-codes";
-import { IConfigProvider } from "../../../../core/models/i-config-provider";
+import { IConfigProvider } from "../../../../core/interfaces/i-config-provider";
 import App from "../../../../App";
 import getUser from "../get-user";
 

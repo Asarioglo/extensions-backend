@@ -5,7 +5,7 @@ import winston, {
     Logger as WinstonLogger,
 } from "winston";
 import { ILogger } from "./i-logger";
-import { IConfigProvider } from "../models/i-config-provider";
+import { IConfigProvider } from "../interfaces/i-config-provider";
 import path from "path";
 import os from "os";
 

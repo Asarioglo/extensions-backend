@@ -1,5 +1,5 @@
 import { MongoMemoryServer } from "mongodb-memory-server";
-import { IConfigProvider } from "../models/i-config-provider";
+import { IConfigProvider } from "../interfaces/i-config-provider";
 import dotenv from "dotenv";
 import TestEnvWithConfig from "./test-env-with-config";
 

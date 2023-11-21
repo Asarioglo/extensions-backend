@@ -3,7 +3,7 @@
  */
 
 import { ConfigProvider } from "../core/config/config-provider";
-import { IConfigProvider } from "../core/models/i-config-provider";
+import { IConfigProvider } from "../core/interfaces/i-config-provider";
 import Logger from "../core/logging/logger";
 import DevLogger from "../core/logging/dev-logger";
 import fs from "fs";

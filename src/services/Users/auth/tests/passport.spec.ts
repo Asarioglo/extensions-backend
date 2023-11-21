@@ -1,10 +1,10 @@
 import passport from "passport";
 import configurePassport from "../passport";
-import AbstractUserRepo, {
+import IUserRepository, {
     UserCallback,
-} from "../../database/base/abstract-user-repo";
+} from "../../database/base/i-user-repository";
 import { IUser, TestUserData } from "../../models/i-user";
-import { RepoCallback } from "../../../../core/database/abstract-repository";
+import { RepoCallback } from "../../../../core/interfaces/i-repository";
 import AbstractAuthProvider from "../abstract-auth-provider";
 
 namespace MockPassport {
@@ -35,7 +35,7 @@ class MockAuthProvider extends AbstractAuthProvider {
     refreshToken = jest.fn();
 }
 
-class MockUserRepo extends AbstractUserRepo {
+class MockUserRepo implements IUserRepository {
     findById(
         id: string,
         callback?: RepoCallback<IUser> | undefined

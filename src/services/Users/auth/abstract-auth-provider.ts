@@ -14,4 +14,8 @@ export default abstract class AbstractAuthProvider {
     abstract addLoginRoutes(router: Router): void;
 
     abstract refreshToken(refreshToken: string): Promise<string>;
+
+    getName(): string {
+        return this.name;
+    }
 }

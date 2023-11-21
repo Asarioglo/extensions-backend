@@ -1,12 +1,12 @@
 //------------ Local User Model ------------//
 import passport from "passport";
 import { IUser } from "../models/i-user";
-import AbstractUserRepo from "../database/base/abstract-user-repo";
+import IUserRepository from "../database/base/i-user-repository";
 import AbstractAuthProvider from "./abstract-auth-provider";
 
 export default function (
     passport: passport.PassportStatic,
-    userRepo: AbstractUserRepo,
+    userRepo: IUserRepository,
     providers: AbstractAuthProvider[]
 ) {
     passport.serializeUser(function (user: IUser, done) {

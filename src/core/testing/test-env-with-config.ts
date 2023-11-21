@@ -1,8 +1,8 @@
 import NodeEnvironment from "jest-environment-node";
 import { ConfigFactory } from "../config/config-factory";
 import dotenv from "dotenv";
-import Logger from "../logging/logger";
-import { IConfigProvider } from "../models/i-config-provider";
+import { ILogger } from "../logging/i-logger";
+import MockLogger from "./mock-logger";
 
 export default class TestEnvWithConfig extends NodeEnvironment {
     constructor(config: any, context: any) {
@@ -14,8 +14,6 @@ export default class TestEnvWithConfig extends NodeEnvironment {
         await super.setup();
         // Setup the test database
         this.global.__configProvider = ConfigFactory.create("test");
-        this.global.__logger = new Logger(
-            this.global.__configProvider as IConfigProvider
-        );
+        this.global.__logger = new MockLogger();
     }
 }

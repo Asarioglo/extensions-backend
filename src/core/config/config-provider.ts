@@ -1,4 +1,4 @@
-import { IConfigProvider } from "../models/i-config-provider";
+import { IConfigProvider } from "../interfaces/i-config-provider";
 
 export type EnvVarMapping = [
     envvar: string,

@@ -1,21 +1,21 @@
 export type RepoCallback<T> = (err: any, data: T | null) => void;
 
-export default abstract class AbstractRepository<T> {
-    abstract findOrCreate(
+export default interface IRepository<T> {
+    findOrCreate(
         queryData: Partial<T>,
         callback?: RepoCallback<T>
-    ): Promise<T>;
+    ): Promise<T | null>;
 
-    abstract findById(id: string, callback?: RepoCallback<T>): Promise<T>;
+    findById(id: string, callback?: RepoCallback<T>): Promise<T | null>;
 
-    abstract findOne(
+    findOne(
         queryData: Partial<T>,
         callback: RepoCallback<T>
-    ): Promise<T>;
+    ): Promise<T | null>;
 
-    abstract update(
+    update(
         queryData: Partial<T>,
         updateData: Partial<T>,
         callback?: RepoCallback<T>
-    ): Promise<T>;
+    ): Promise<T | null>;
 }
