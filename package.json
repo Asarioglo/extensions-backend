@@ -3,7 +3,6 @@
     "version": "3.0.0",
     "description": "Microservice based one-click Email Server",
     "main": "src/index.js",
-    "type": "module",
     "scripts": {
         "start": "nodemon",
         "test": "jest --coverage"
@@ -33,8 +32,10 @@
         "@types/jsonwebtoken": "^9.0.5",
         "@types/mongoose": "^5.11.97",
         "@types/passport": "^1.0.15",
+        "@types/winston": "^2.4.4",
         "jsonwebtoken": "^9.0.2",
         "mongoose": "^8.0.1",
-        "passport": "^0.6.0"
+        "passport": "^0.6.0",
+        "winston": "^3.11.0"
     }
 }

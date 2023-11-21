@@ -1,6 +1,7 @@
 import MongoTestEnvironment from "./mongo-test-environment";
 import App from "../../App";
 import { ConfigProvider } from "../config/config-provider";
+import Logger from "../logging/logger";
 
 export default class ExpressAppEnvironment extends MongoTestEnvironment {
     constructor(config: any, context: any) {
@@ -10,7 +11,8 @@ export default class ExpressAppEnvironment extends MongoTestEnvironment {
     async setup(): Promise<void> {
         await super.setup();
         const configProvider = this.global.__configProvider as ConfigProvider;
-        this.global.__app = new App(configProvider);
+        const logger = this.global.__logger as Logger;
+        this.global.__app = new App(configProvider, logger);
     }
 
     async teardown(): Promise<void> {
