@@ -1,4 +1,4 @@
-export type RepoCallback<T> = (err: any, data: T | null) => void;
+export type RepoCallback<T> = (err: Error | null, data: T | null) => void;
 
 export default interface IRepository<T> {
     findOrCreate(

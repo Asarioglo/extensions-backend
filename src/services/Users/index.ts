@@ -8,6 +8,8 @@ import { IConfigProvider } from "../../core/interfaces/i-config-provider";
 
 export class UsersService implements IMicroservice {
     launch(config: IConfigProvider, logger: ILogger): Router {
+        logger.debug("UsersService.launch()");
+
         const conn_str = config.get("users_mongo_uri");
         if (!conn_str) {
             throw new Error("Missing users_mongo_uri");

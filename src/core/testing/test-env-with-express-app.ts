@@ -1,9 +1,10 @@
-import MongoTestEnvironment from "./mongo-test-environment";
+import MongoTestEnvironment from "./test-env-with-mongo";
 import App from "../../App";
 import { ConfigProvider } from "../config/config-provider";
 import Logger from "../logging/logger";
 
 export default class ExpressAppEnvironment extends MongoTestEnvironment {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     constructor(config: any, context: any) {
         super(config, context);
     }

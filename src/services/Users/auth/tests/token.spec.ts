@@ -35,7 +35,7 @@ describe("Tokens", () => {
 
     it("Should decode a token correctly", () => {
         const tokenObj = Tokens.createToken(secret, mockUser as IUser);
-        const { token, id } = tokenObj;
+        const { token } = tokenObj;
         const decoded: TokenPayload = Tokens.decodeToken(
             token,
             secret,
@@ -50,7 +50,7 @@ describe("Tokens", () => {
     it("Should keep expiration date in seconds", () => {
         const now = Math.floor(Date.now() / 1000);
         const tokenObj = Tokens.createToken(secret, mockUser as IUser);
-        const { token, id } = tokenObj;
+        const { token } = tokenObj;
         const decoded: TokenPayload = Tokens.decodeToken(
             token,
             secret,
@@ -62,7 +62,7 @@ describe("Tokens", () => {
     it("Should respect user defined expiration", () => {
         const now = Math.floor(Date.now() / 1000);
         const tokenObj = Tokens.createToken(secret, mockUser as IUser, 10);
-        const { token, id } = tokenObj;
+        const { token } = tokenObj;
         const decoded: TokenPayload = Tokens.decodeToken(
             token,
             secret,
@@ -88,17 +88,9 @@ describe("Tokens", () => {
         }
     });
 
-    dquote> Got rid of the "abstract" methods for repositories, everything should be preserved 
-dquote> in interfaces unless absolutely necessary. 
-dquote> Added a dummy logger to the testing environment, it was needed, after all.           
-dquote> No need to pollute the console and create files with error logs when things break.
-dquote> Logging is tested on its own. Potentially we want to make that dummy logger into a 
-dquote> mock and test that logging works, but at the moment that adds a lot of complexity.
-dquote> Changed some names, makes more sense to me.
-
     it("Should reject tokens with invalid signature", () => {
         const tokenObj = Tokens.createToken(secret, mockUser as IUser);
-        const { token, id } = tokenObj;
+        const { token } = tokenObj;
         const decoded: TokenPayload = Tokens.decodeToken(
             token,
             secret,

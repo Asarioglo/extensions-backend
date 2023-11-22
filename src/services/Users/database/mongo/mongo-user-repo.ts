@@ -30,7 +30,7 @@ export default class MongoUserRepo implements IUserRepository {
             "name",
         ];
 
-        let user: any = null;
+        let user: unknown;
 
         try {
             ParamUtils.requireParams(userData, required);
@@ -67,10 +67,16 @@ export default class MongoUserRepo implements IUserRepository {
                 }
             }
         }
-        if (callback) {
-            callback(null, user.toJSON() as IUser);
+        if (!user) {
+            throw new Error("User was not created");
         }
-        return user.toJSON() as IUser;
+        // TODO: Need to improve this type checking for mongo models
+        if (callback) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            callback(null, (user as any).toJSON() as IUser);
+        }
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return (user as any).toJSON() as IUser;
     }
 
     async findById(id: string, callback?: UserCallback): Promise<IUser | null> {
@@ -102,7 +108,7 @@ export default class MongoUserRepo implements IUserRepository {
     async findOne(
         queryData: Partial<IUser>,
         callback?: UserCallback
-    ): Promise<IUser> {
+    ): Promise<IUser | null> {
         try {
             const user = await this.User.findOne(queryData);
             if (user) {
@@ -120,6 +126,7 @@ export default class MongoUserRepo implements IUserRepository {
         } catch (err) {
             if (callback) {
                 callback(err, null);
+                return null;
             } else {
                 throw err;
             }

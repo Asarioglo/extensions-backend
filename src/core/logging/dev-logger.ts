@@ -1,8 +1,8 @@
-import { createLogger, format, transports } from "winston";
+import { format, transports } from "winston";
 import Logger from "./logger";
 
 class DevLogger extends Logger {
-    protected _getTransports(level: string, location: string) {
+    protected _getTransports() {
         return [
             new transports.Console({
                 level: "debug",

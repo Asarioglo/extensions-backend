@@ -1,10 +1,10 @@
 import NodeEnvironment from "jest-environment-node";
 import { ConfigFactory } from "../config/config-factory";
 import dotenv from "dotenv";
-import { ILogger } from "../logging/i-logger";
 import MockLogger from "./mock-logger";
 
 export default class TestEnvWithConfig extends NodeEnvironment {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     constructor(config: any, context: any) {
         super(config, context);
         dotenv.config();

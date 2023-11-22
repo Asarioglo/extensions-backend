@@ -97,7 +97,7 @@ namespace Tokens {
                 algorithms: ["HS256"],
             }) as TokenPayload;
             return decoded;
-        } catch (e: any) {
+        } catch (e: any /* eslint-disable-line */) {
             if (e.name === "TokenExpiredError") {
                 throw new TokenError(
                     Tokens.ErrorType.ExpiredToken,

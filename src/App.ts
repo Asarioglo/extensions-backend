@@ -8,6 +8,7 @@ import cors from "cors";
 import { IConfigProvider } from "./core/interfaces/i-config-provider";
 import { IMicroservice } from "./core/interfaces/i-microservice";
 import { ILogger } from "./core/logging/i-logger";
+import { Server } from "http";
 
 type MicroserviceEntry = [route: string, microservice: IMicroservice];
 
@@ -22,7 +23,7 @@ export class App {
     private _services: MicroserviceEntry[] = [];
     private _customMiddlewares: CustomMiddleware[] = [];
     private _express: express.Application | null = null;
-    private _server: any = null;
+    private _server: Server | null = null;
     private _config: IConfigProvider;
     private _state: "INITIALIZED" | "STARTED" | "STOPPED" = "INITIALIZED";
     private _logger: ILogger;
@@ -132,11 +133,18 @@ export class App {
         this._initRoutes();
 
         return new Promise((resolve, reject) => {
-            this._server = this._express.listen(this.PORT, () => {
-                this._state = "STARTED";
-                this._logger.info(`Server is running on port ${this.PORT}`);
-                resolve(true);
-            });
+            try {
+                this._server = this._express.listen(this.PORT, () => {
+                    this._state = "STARTED";
+                    this._logger.info(`Server is running on port ${this.PORT}`);
+                    resolve(true);
+                });
+            } catch (err) {
+                this._logger.error("Failed to start server", {
+                    error: err,
+                });
+                reject(err);
+            }
         });
     }
 
@@ -146,13 +154,20 @@ export class App {
             return Promise.resolve(true);
         }
         return new Promise((resolve, reject) => {
-            this._server?.close(() => {
-                this._logger.info("Server stopped.");
-                this._state = "STOPPED";
-                this._express = null;
-                this._server = null;
-                resolve(true);
-            });
+            try {
+                this._server?.close(() => {
+                    this._logger.info("Server stopped.");
+                    this._state = "STOPPED";
+                    this._express = null;
+                    this._server = null;
+                    resolve(true);
+                });
+            } catch (err) {
+                this._logger.error("Failed to stop server", {
+                    error: err,
+                });
+                reject(err);
+            }
         });
     }
 }

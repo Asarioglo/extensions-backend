@@ -11,8 +11,8 @@ import supertest from "supertest";
 
 describe("App", () => {
     let appInstance: App;
-    let configProvider = ConfigFactory.create("test");
-    let baseURLPrefix = configProvider.get("route_prefix", "");
+    const configProvider = ConfigFactory.create("test");
+    const baseURLPrefix = configProvider.get("route_prefix", "");
 
     beforeEach(async () => {
         appInstance = new App(
@@ -23,7 +23,6 @@ describe("App", () => {
 
     afterEach(async () => {
         await appInstance.stop();
-        appInstance = null as any;
     });
 
     it("should be defined", () => {
@@ -118,7 +117,7 @@ describe("App", () => {
     });
 
     it("should add custom middleware", async () => {
-        const mockMiddleware = jest.fn((req, res, next) => res.sendStatus(200));
+        const mockMiddleware = jest.fn((req, res) => res.sendStatus(200));
         appInstance.addCustomMiddleware("custom_middleware", mockMiddleware);
         await appInstance.start();
         await supertest(appInstance.getExpressApp())
@@ -131,7 +130,8 @@ describe("App", () => {
         const mockMicroservice = new MockMicroservice();
         appInstance.addMicroservice("mock", mockMicroservice);
         await appInstance.start();
-        let endpoints = [
+        type Endpoint = [string, string, number];
+        const endpoints: Endpoint[] = [
             ["get", "get_success_json", 200],
             ["get", "get_success_text", 200],
             ["get", "get_failure_500", 500],

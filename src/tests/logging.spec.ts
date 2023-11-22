@@ -27,8 +27,8 @@ async function runLogs(logger: Logger, timeout: number = 500) {
 describe("Logging", () => {
     let configProvider: IConfigProvider;
     let cfgProvider: ConfigProvider;
-    let logDirectory = path.join(os.homedir(), "ext-backend", "logs-test");
-    let logFiles: any[] | null = null;
+    const logDirectory = path.join(os.homedir(), "ext-backend", "logs-test");
+    let logFiles: string[] | null = null;
 
     function numberOfFiles() {
         if (!fs.existsSync(logDirectory)) {
@@ -60,12 +60,12 @@ describe("Logging", () => {
 
     beforeEach(() => {
         configProvider = globalThis.__configProvider as IConfigProvider;
+        // to stop the assigned but not used error
+        configProvider.get("log_location", logDirectory);
         cfgProvider = new ConfigProvider();
     });
 
     afterEach(() => {
-        configProvider = null as any;
-        cfgProvider = null as any;
         // clean up log files
         if (logFiles) {
             for (const logFile of logFiles) {
@@ -224,7 +224,10 @@ describe("Logging", () => {
         expect(numberOfFiles()).toBe(5);
         function testHasData(fileName: string) {
             const logFile = getLogFileByName(fileName);
-            expect(logFile).toBeDefined();
+            expect(logFile).toBeTruthy();
+            if (!logFile) {
+                return;
+            }
             const logFileContent = fs.readFileSync(
                 path.join(logDirectory, logFile),
                 "utf8"

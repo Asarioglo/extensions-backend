@@ -1,5 +1,5 @@
 /**
- * @jest-environment ./src/core/testing/express-app-environment.ts
+ * @jest-environment ./src/core/testing/test-env-with-express-app.ts
  */
 import "jest";
 import supertest from "supertest";
@@ -9,9 +9,9 @@ import App from "../../../../App";
 import getUser from "../get-user";
 
 describe("GET /users/me", () => {
-    let app: App;
+    let app!: App;
     let config: IConfigProvider;
-    let uri_prefix: string;
+    let uri_prefix: string | null = null;
 
     beforeEach(async () => {
         app = globalThis.__app as App;
@@ -20,8 +20,7 @@ describe("GET /users/me", () => {
     });
 
     afterEach(async () => {
-        await app?.stop();
-        app = null as any;
+        await app.stop();
     });
 
     it("should return 200 OK", async () => {

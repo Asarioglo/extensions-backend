@@ -1,5 +1,5 @@
 export interface IConfigProvider {
-    get(key: string, default_value?: any): any;
+    get(key: string, default_value?: string): string | null;
 
-    set(key: string, value: any): void;
+    set(key: string, value: string): void;
 }

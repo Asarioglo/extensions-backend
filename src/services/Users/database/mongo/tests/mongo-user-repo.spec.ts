@@ -1,8 +1,8 @@
 /**
- * @jest-environment ./src/core/testing/mongo-test-environment.ts
+ * @jest-environment ./src/core/testing/test-env-with-mongo.ts
  */
 
-import mongoose, { mongo } from "mongoose";
+import mongoose from "mongoose";
 import MongoUserRepo from "../mongo-user-repo";
 import { IUser, TestUserData } from "../../../models/i-user";
 import { UserCallback } from "../../base/i-user-repository";
@@ -82,10 +82,13 @@ describe("Mongo User Repository", () => {
         // passing a non-string value to providerId will make it fail at
         // lookup time
         await expect(
-            repo.findOrCreate({ ...TestUserData, providerId: {} } as any)
+            repo.findOrCreate({ ...TestUserData, providerId: {} } as IUser)
         ).rejects.toThrow();
         const cb = jest.fn() as UserCallback;
-        await repo.findOrCreate({ ...TestUserData, providerId: {} } as any, cb);
+        await repo.findOrCreate(
+            { ...TestUserData, providerId: {} } as IUser,
+            cb
+        );
         expect(cb).toHaveBeenCalled();
         expect(cb).toHaveBeenCalledWith(expect.any(Error), null);
 
@@ -95,11 +98,11 @@ describe("Mongo User Repository", () => {
                 ...TestUserData,
                 providerId: "123",
                 name: {},
-            } as any)
+            } as IUser)
         ).rejects.toThrow();
         const cb2 = jest.fn() as UserCallback;
         await repo.findOrCreate(
-            { ...TestUserData, providerId: "123", name: {} } as any,
+            { ...TestUserData, providerId: "123", name: {} } as IUser,
             cb2
         );
         expect(cb2).toHaveBeenCalled();
@@ -163,7 +166,7 @@ describe("Mongo User Repository", () => {
         const user = await repo.findById("123456789012345678901234");
         expect(user).toBeNull();
         const cb = jest.fn() as UserCallback;
-        const user2 = await repo.findById("123456789012345678901234", cb);
+        await repo.findById("123456789012345678901234", cb);
         expect(cb).toHaveBeenCalled();
         expect(cb).toHaveBeenCalledWith(null, null);
     });
@@ -180,7 +183,7 @@ describe("Mongo User Repository", () => {
         expect(user2).toEqual(user);
 
         const cb = jest.fn() as UserCallback;
-        const user3 = await repo.findOne(
+        await repo.findOne(
             {
                 name: TestUserData.name,
                 email: TestUserData.email,
@@ -194,7 +197,7 @@ describe("Mongo User Repository", () => {
     it("Should not find a user by other parameters", async () => {
         if (!connection) throw new Error("Connection did not initialize");
         const repo = new MongoUserRepo(connection);
-        const user = await repo.findOrCreate(TestUserData);
+        await repo.findOrCreate(TestUserData);
         const user2 = await repo.findOne({
             name: TestUserData.name,
             email: "test@gmail.com",
@@ -202,7 +205,7 @@ describe("Mongo User Repository", () => {
         expect(user2).toBeNull();
 
         const cb = jest.fn() as UserCallback;
-        const user3 = await repo.findOne(
+        await repo.findOne(
             {
                 name: TestUserData.name,
                 email: "test@gmail.com",
@@ -216,9 +219,9 @@ describe("Mongo User Repository", () => {
     it("Should fail gracefully finding a user by other parameters", async () => {
         if (!connection) throw new Error("Connection did not initialize");
         const repo = new MongoUserRepo(connection);
-        await expect(repo.findOne({ name: {} } as any)).rejects.toThrow();
+        await expect(repo.findOne({ name: {} } as IUser)).rejects.toThrow();
         const cb = jest.fn() as UserCallback;
-        await repo.findOne({ name: {} } as any, cb);
+        await repo.findOne({ name: {} } as IUser, cb);
         expect(cb).toHaveBeenCalled();
         expect(cb).toHaveBeenCalledWith(expect.any(Error), null);
     });
@@ -249,10 +252,10 @@ describe("Mongo User Repository", () => {
         if (!connection) throw new Error("Connection did not initialize");
         const repo = new MongoUserRepo(connection);
         await expect(
-            repo.update({ name: {} } as any, { name: "new_name" })
+            repo.update({ name: {} } as IUser, { name: "new_name" })
         ).rejects.toThrow();
         const cb = jest.fn() as UserCallback;
-        await repo.update({ name: {} } as any, { name: "new_name" }, cb);
+        await repo.update({ name: {} } as IUser, { name: "new_name" }, cb);
         expect(cb).toHaveBeenCalled();
         expect(cb).toHaveBeenCalledWith(expect.any(Error), null);
         // -------------- Wrong Update Params --------------
@@ -262,7 +265,7 @@ describe("Mongo User Repository", () => {
                     providerId: TestUserData.providerId,
                     email: TestUserData.email,
                 },
-                { name: {} } as any
+                { name: {} } as IUser
             )
         ).rejects.toThrow();
         const cb2 = jest.fn() as UserCallback;
@@ -271,7 +274,7 @@ describe("Mongo User Repository", () => {
                 providerId: TestUserData.providerId,
                 email: TestUserData.email,
             },
-            { name: {} } as any,
+            { name: {} } as IUser,
             cb2
         );
     });

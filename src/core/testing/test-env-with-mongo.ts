@@ -5,7 +5,7 @@ import TestEnvWithConfig from "./test-env-with-config";
 
 export default class MongoTestEnvironment extends TestEnvWithConfig {
     private __dbInstance: MongoMemoryServer;
-
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     constructor(config: any, context: any) {
         super(config, context);
         dotenv.config();

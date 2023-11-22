@@ -4,6 +4,7 @@ import winston, {
     format,
     Logger as WinstonLogger,
 } from "winston";
+import * as Transport from "winston-transport";
 import { ILogger } from "./i-logger";
 import { IConfigProvider } from "../interfaces/i-config-provider";
 import path from "path";
@@ -63,28 +64,28 @@ class Logger implements ILogger {
         winston.addColors(CustomLevels.colors);
     }
 
-    public error = (msg: string, ...args: any[]) => {
+    public error = (msg: string, ...args: unknown[]) => {
         this._logger.error(msg, ...args);
     };
 
-    public access = (msg: string, ...args: any[]) => {
+    public access = (msg: string, ...args: unknown[]) => {
         this._logger.log("access", msg, ...args);
     };
 
-    public warn = (msg: string, ...args: any[]) => {
+    public warn = (msg: string, ...args: unknown[]) => {
         this._logger.warn(msg, ...args);
     };
 
-    public info = (msg: string, ...args: any[]) => {
+    public info = (msg: string, ...args: unknown[]) => {
         this._logger.info(msg, ...args);
     };
 
-    public debug = (msg: string, ...args: any[]) => {
+    public debug = (msg: string, ...args: unknown[]) => {
         this._logger.debug(msg, ...args);
     };
 
     protected _getTransports(level: string, location: string) {
-        const myTransports: any[] = [
+        const myTransports: Transport[] = [
             new transports.File({
                 level: "error",
                 filename: path.join(location, "error.log"),

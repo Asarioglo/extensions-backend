@@ -51,7 +51,8 @@ const UserSchema = new mongoose.Schema<IUser>(
 );
 
 UserSchema.virtual("id").get(function (this: IUser) {
-    return this._id.toHexString();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (this._id as any).toHexString();
 });
 
 UserSchema.set("toJSON", {
