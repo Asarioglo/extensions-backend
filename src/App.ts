@@ -82,7 +82,7 @@ export class App {
         this._express.use(express.urlencoded({ extended: false }));
     }
 
-    _initRoutes() {
+    async _initRoutes() {
         this._logger.info(`Initializing routes at prefix ${this.ROUTE_PREFIX}`);
         //------------ Logging ------------//
         this._logger.debug("Initializing request logging");
@@ -104,13 +104,17 @@ export class App {
         this._logger.debug("Initializing microservices", {
             data: { n: this._services.length },
         });
-        this._services.forEach(([route, microservice]) => {
+        for (const [route, microservice] of this._services) {
             const combined_route = `${this.ROUTE_PREFIX}/${route}`;
             this._express.use(
                 combined_route,
-                microservice.launch(this._config, this._logger)
+                await microservice.launch(
+                    this._express,
+                    this._config,
+                    this._logger
+                )
             );
-        });
+        }
 
         //------------ Unhandled Requests ------------//
         this._logger.debug("Initializing unhandled requests");
@@ -121,7 +125,7 @@ export class App {
         });
     }
 
-    start(): Promise<boolean> {
+    async start(): Promise<boolean> {
         if (this._server !== null) {
             this._logger.error("Attempted to start server twice.");
             throw new Error("Server is already running.");
@@ -130,9 +134,9 @@ export class App {
         this._express = express();
 
         this._initUtils();
-        this._initRoutes();
+        await this._initRoutes();
 
-        return new Promise((resolve, reject) => {
+        return await new Promise((resolve, reject) => {
             try {
                 this._server = this._express.listen(this.PORT, () => {
                     this._state = "STARTED";
@@ -148,12 +152,12 @@ export class App {
         });
     }
 
-    stop(): Promise<boolean> {
+    async stop(): Promise<boolean> {
         if (this._server === null) {
             this._logger.debug("Server is already stopped.");
             return Promise.resolve(true);
         }
-        return new Promise((resolve, reject) => {
+        return await new Promise((resolve, reject) => {
             try {
                 this._server?.close(() => {
                     this._logger.info("Server stopped.");

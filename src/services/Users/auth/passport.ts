@@ -3,6 +3,7 @@ import passport from "passport";
 import { IUser } from "../models/i-user";
 import IUserRepository from "../database/base/i-user-repository";
 import AbstractAuthProvider from "./abstract-auth-provider";
+import { ILogger } from "../../../core/logging/i-logger";
 
 type SerializeDoneFn = (err: Error | null, id?: string) => void;
 type DeserializeDoneFn = (err: Error | null, user?: IUser | null) => void;
@@ -10,8 +11,10 @@ type DeserializeDoneFn = (err: Error | null, user?: IUser | null) => void;
 export default function (
     passport: passport.PassportStatic,
     userRepo: IUserRepository,
-    providers: AbstractAuthProvider[]
+    providers: AbstractAuthProvider[],
+    logger: ILogger
 ) {
+    logger.debug("Configuring passport");
     passport.serializeUser<string>(
         (user: Express.User, done: SerializeDoneFn) => {
             if ("id" in user && typeof user.id === "string")

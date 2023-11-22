@@ -1,8 +1,13 @@
+/**
+ * @jest-environment ./src/core/testing/test-env-with-config.ts
+ */
+
 import configurePassport from "../passport";
 import IUserRepository from "../../database/base/i-user-repository";
 import { IUser, TestUserData } from "../../models/i-user";
 import { RepoCallback } from "../../../../core/interfaces/i-repository";
 import AbstractAuthProvider from "../abstract-auth-provider";
+import { ILogger } from "../../../../core/logging/i-logger";
 
 class MockPassport {
     static serializeUser = jest.fn();
@@ -77,15 +82,25 @@ describe("passport", () => {
     beforeEach(() => {});
 
     it("should call serialize and deserialize user functions", () => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        configurePassport(MockPassport as any, new MockUserRepo(), []);
+        configurePassport(
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            MockPassport as any,
+            new MockUserRepo(),
+            [],
+            globalThis.__logger as ILogger
+        );
         expect(MockPassport.serializeUser).toHaveBeenCalled();
         expect(MockPassport.deserializeUser).toHaveBeenCalled();
     });
 
     it("should serialize and deserialize user by ID", (done) => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        configurePassport(TestPassport as any, new MockUserRepo(), []);
+        configurePassport(
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            TestPassport as any,
+            new MockUserRepo(),
+            [],
+            globalThis.__logger as ILogger
+        );
         const xpressDone = jest.fn();
         TestPassport.serializeUserFn?.(TestUserData, xpressDone);
         expect(xpressDone).toHaveBeenCalled();
@@ -101,8 +116,13 @@ describe("passport", () => {
 
     it("should iterate through providers and add passport strategies", () => {
         const providers = [new MockAuthProvider(), new MockAuthProvider()];
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        configurePassport(TestPassport as any, new MockUserRepo(), providers);
+        configurePassport(
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            TestPassport as any,
+            new MockUserRepo(),
+            providers,
+            globalThis.__logger as ILogger
+        );
         expect(providers[0].addPassportStrategy).toHaveBeenCalled();
         expect(providers[0].addPassportStrategy).toHaveBeenCalledWith(
             TestPassport

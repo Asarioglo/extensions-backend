@@ -4,7 +4,7 @@ import { Router } from "express";
 export class MockMicroservice implements IMicroservice {
     launch_called = false;
 
-    public launch(): Router {
+    public async launch(): Promise<Router> {
         const router = Router();
 
         router.get("/", (req, res) => {

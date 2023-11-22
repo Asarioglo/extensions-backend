@@ -3,6 +3,7 @@ import { ConfigFactory } from "./core/config/config-factory";
 import dotenv from "dotenv";
 import Logger from "./core/logging/logger";
 import DevLogger from "./core/logging/dev-logger";
+import { UsersService } from "./services/Users";
 
 dotenv.config();
 
@@ -12,6 +13,8 @@ const logger =
     env === "development" ? new DevLogger(config) : new Logger(config);
 
 const app = new App(config, logger);
+
+app.addMicroservice("/users", new UsersService());
 
 app.start().then(() => {
     logger.info("App initialization complete.");
