@@ -12,11 +12,21 @@ import os from "os";
 
 async function runLogs(logger: Logger, timeout: number = 500) {
     return new Promise((resolve) => {
-        logger.error("Test logging error");
-        logger.access("Test logging access");
-        logger.warn("Test logging warn");
-        logger.info("Test logging info");
-        logger.debug("Test logging debug");
+        logger.error("Test logging error", {
+            data: { foo: "bar" },
+        });
+        logger.access("Test logging access", {
+            data: { foo: "bar" },
+        });
+        logger.warn("Test logging warn", {
+            data: { foo: "bar" },
+        });
+        logger.info("Test logging info", {
+            data: { foo: "bar" },
+        });
+        logger.debug("Test logging debug", {
+            data: { foo: "bar" },
+        });
         // .5 second should be enough to write to file.
         setTimeout(() => {
             resolve(true);
@@ -34,18 +44,20 @@ describe("Logging", () => {
         if (!fs.existsSync(logDirectory)) {
             return 0;
         }
-        logFiles = fs.readdirSync(logDirectory);
+        const allFiles = fs.readdirSync(logDirectory);
+        const logFiles = allFiles.filter((file) => file.endsWith(".log"));
         return logFiles.length;
     }
 
-    function getLogFileByName(name: string) {
+    function getLogFileByType(name: string) {
         if (!fs.existsSync(logDirectory)) {
             return null;
         }
         if (logFiles === null) {
-            logFiles = fs.readdirSync(logDirectory);
+            const allFiles = fs.readdirSync(logDirectory);
+            logFiles = allFiles.filter((file) => file.endsWith(".log"));
         }
-        const logFile = logFiles.find((file) => file === name);
+        const logFile = logFiles.find((file) => file.includes(name));
         return logFile || null;
     }
 
@@ -67,10 +79,12 @@ describe("Logging", () => {
 
     afterEach(() => {
         // clean up log files
-        if (logFiles) {
-            for (const logFile of logFiles) {
-                fs.unlinkSync(path.join(logDirectory, logFile));
-            }
+        if (!fs.existsSync(logDirectory)) {
+            return;
+        }
+        const allFiles = fs.readdirSync(logDirectory);
+        for (const f of allFiles) {
+            fs.unlinkSync(path.join(logDirectory, f));
         }
         if (fs.existsSync(logDirectory)) fs.rmdirSync(logDirectory);
         logFiles = null;
@@ -80,9 +94,10 @@ describe("Logging", () => {
         const logger = new Logger(cfgProvider);
         await runLogs(logger);
 
+        // one *.audit.json per log file
         expect(numberOfFiles()).toBe(1);
-        const logFile = getLogFileByName("error.log");
-        expect(logFile).toBeDefined();
+        const logFile = getLogFileByType("error");
+        expect(logFile).toBeTruthy();
         expect(getNumLines(logFile!)).toBe(2); // 2 lines because of empty line at the end
     });
 
@@ -93,13 +108,13 @@ describe("Logging", () => {
         await runLogs(logger);
 
         expect(numberOfFiles()).toBe(2);
-        const logFile = getLogFileByName("access.log");
-        expect(logFile).toBeDefined();
+        const logFile = getLogFileByType("access");
+        expect(logFile).toBeTruthy();
         expect(getNumLines(logFile!)).toBe(2); // 2 lines because of empty line at the end
 
         // make sure the access log didn't log anywhere else
-        const errorLogFile = getLogFileByName("error.log");
-        expect(errorLogFile).toBeDefined();
+        const errorLogFile = getLogFileByType("error");
+        expect(errorLogFile).toBeTruthy();
         expect(getNumLines(errorLogFile!)).toBe(2);
     });
 
@@ -110,18 +125,18 @@ describe("Logging", () => {
         await runLogs(logger);
 
         expect(numberOfFiles()).toBe(3);
-        const logFile = getLogFileByName("warn.log");
-        expect(logFile).toBeDefined();
+        const logFile = getLogFileByType("warn");
+        expect(logFile).toBeTruthy();
         expect(getNumLines(logFile!)).toBe(2); // 2 lines because of empty line at the end
 
         // make sure the warn log didn't log anywhere else
-        const accessLogFile = getLogFileByName("access.log");
-        expect(accessLogFile).toBeDefined();
+        const accessLogFile = getLogFileByType("access");
+        expect(accessLogFile).toBeTruthy();
         expect(getNumLines(accessLogFile!)).toBe(2); // 2 lines because of empty line at the end
 
         // make sure the warn log didn't log anywhere else
-        const errorLogFile = getLogFileByName("error.log");
-        expect(errorLogFile).toBeDefined();
+        const errorLogFile = getLogFileByType("error");
+        expect(errorLogFile).toBeTruthy();
         expect(getNumLines(errorLogFile!)).toBe(2);
     });
 
@@ -132,23 +147,23 @@ describe("Logging", () => {
         await runLogs(logger);
 
         expect(numberOfFiles()).toBe(4);
-        const logFile = getLogFileByName("info.log");
-        expect(logFile).toBeDefined();
+        const logFile = getLogFileByType("info");
+        expect(logFile).toBeTruthy();
         expect(getNumLines(logFile!)).toBe(2); // 2 lines because of empty line at the end
 
         // make sure the info log didn't log anywhere else
-        const warnLogFile = getLogFileByName("warn.log");
-        expect(warnLogFile).toBeDefined();
+        const warnLogFile = getLogFileByType("warn");
+        expect(warnLogFile).toBeTruthy();
         expect(getNumLines(warnLogFile!)).toBe(2); // 2 lines because of empty line at the end
 
         // make sure the info log didn't log anywhere else
-        const accessLogFile = getLogFileByName("access.log");
-        expect(accessLogFile).toBeDefined();
+        const accessLogFile = getLogFileByType("access");
+        expect(accessLogFile).toBeTruthy();
         expect(getNumLines(accessLogFile!)).toBe(2); // 2 lines because of empty line at the end
 
         // make sure the info log didn't log anywhere else
-        const errorLogFile = getLogFileByName("error.log");
-        expect(errorLogFile).toBeDefined();
+        const errorLogFile = getLogFileByType("error");
+        expect(errorLogFile).toBeTruthy();
         expect(getNumLines(errorLogFile!)).toBe(2);
     });
 
@@ -159,28 +174,28 @@ describe("Logging", () => {
         await runLogs(logger);
 
         expect(numberOfFiles()).toBe(5);
-        const logFile = getLogFileByName("debug.log");
-        expect(logFile).toBeDefined();
+        const logFile = getLogFileByType("debug");
+        expect(logFile).toBeTruthy();
         expect(getNumLines(logFile!)).toBe(2); // 2 lines because of empty line at the end
 
         // make sure the debug log didn't log anywhere else
-        const infoLogFile = getLogFileByName("info.log");
-        expect(infoLogFile).toBeDefined();
+        const infoLogFile = getLogFileByType("info");
+        expect(infoLogFile).toBeTruthy();
         expect(getNumLines(infoLogFile!)).toBe(2); // 2 lines because of empty line at the end
 
         // make sure the debug log didn't log anywhere else
-        const warnLogFile = getLogFileByName("warn.log");
-        expect(warnLogFile).toBeDefined();
+        const warnLogFile = getLogFileByType("warn");
+        expect(warnLogFile).toBeTruthy();
         expect(getNumLines(warnLogFile!)).toBe(2); // 2 lines because of empty line at the end
 
         // make sure the debug log didn't log anywhere else
-        const accessLogFile = getLogFileByName("access.log");
-        expect(accessLogFile).toBeDefined();
+        const accessLogFile = getLogFileByType("access");
+        expect(accessLogFile).toBeTruthy();
         expect(getNumLines(accessLogFile!)).toBe(2); // 2 lines because of empty line at the end
 
         // make sure the debug log didn't log anywhere else
-        const errorLogFile = getLogFileByName("error.log");
-        expect(errorLogFile).toBeDefined();
+        const errorLogFile = getLogFileByType("error");
+        expect(errorLogFile).toBeTruthy();
         expect(getNumLines(errorLogFile!)).toBe(2);
     });
 
@@ -198,32 +213,11 @@ describe("Logging", () => {
         cfgProvider.set("log_level", "debug");
         const logger = new Logger(cfgProvider);
 
-        await new Promise((resolve) => {
-            logger.error("Test logging error with data", {
-                data: { foo: "bar" },
-            });
-            logger.access("Test logging access with data", {
-                data: { foo: "bar" },
-            });
-            logger.warn("Test logging warn with data", {
-                data: { foo: "bar" },
-            });
-            logger.info("Test logging info with data", {
-                data: { foo: "bar" },
-            });
-            logger.debug("Test logging debug with data", {
-                data: { foo: "bar" },
-            });
-            // .5 second should be enough to write to file. If not, increase timeout
-            setTimeout(() => {
-                resolve(true);
-            }, 500);
-        });
+        await runLogs(logger);
 
-        // 1 second should be enough to write to file. If not, increase timeout
         expect(numberOfFiles()).toBe(5);
         function testHasData(fileName: string) {
-            const logFile = getLogFileByName(fileName);
+            const logFile = getLogFileByType(fileName);
             expect(logFile).toBeTruthy();
             if (!logFile) {
                 return;
@@ -234,16 +228,16 @@ describe("Logging", () => {
             );
             const lines = logFileContent.split("\n");
             const parsed = JSON.parse(lines[0]);
-            expect(parsed).toBeDefined();
+            expect(parsed).toBeTruthy();
             expect(parsed).toHaveProperty("data");
             expect(parsed.data).toHaveProperty("foo");
             expect(parsed.data.foo).toBe("bar");
         }
 
-        testHasData("error.log");
-        testHasData("access.log");
-        testHasData("warn.log");
-        testHasData("info.log");
-        testHasData("debug.log");
+        testHasData("error");
+        testHasData("access");
+        testHasData("warn");
+        testHasData("info");
+        testHasData("debug");
     });
 });

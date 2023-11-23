@@ -4,6 +4,7 @@ import winston, {
     format,
     Logger as WinstonLogger,
 } from "winston";
+import DailyRotateFile from "winston-daily-rotate-file";
 import * as Transport from "winston-transport";
 import { ILogger } from "./i-logger";
 import { IConfigProvider } from "../interfaces/i-config-provider";
@@ -85,53 +86,62 @@ class Logger implements ILogger {
     };
 
     protected _getTransports(level: string, location: string) {
+        const dailyRotateParams = {
+            maxSize: "20m",
+            maxFiles: "14d",
+            datePattern: "YYYY-MM-DD",
+        };
         const myTransports: Transport[] = [
-            new transports.File({
+            new DailyRotateFile({
                 level: "error",
-                filename: path.join(location, "error.log"),
+                filename: path.join(location, "error-%DATE%.log"),
                 format: format.combine(
                     filters.error(),
                     format.timestamp(),
                     format.json()
                 ),
+                ...dailyRotateParams,
             }),
         ];
         if (CustomLevels.levels[level] >= CustomLevels.levels["access"]) {
             myTransports.push(
-                new transports.File({
+                new DailyRotateFile({
                     level: "access",
-                    filename: path.join(location, "access.log"),
+                    filename: path.join(location, "access-%DATE%.log"),
                     format: format.combine(
                         filters.access(),
                         format.timestamp(),
                         format.json()
                     ),
+                    ...dailyRotateParams,
                 })
             );
         }
         if (CustomLevels.levels[level] >= CustomLevels.levels["warn"]) {
             myTransports.push(
-                new transports.File({
+                new DailyRotateFile({
                     level: "warn",
-                    filename: path.join(location, "warn.log"),
+                    filename: path.join(location, "warn-%DATE%.log"),
                     format: format.combine(
                         filters.warn(),
                         format.timestamp(),
                         format.json()
                     ),
+                    ...dailyRotateParams,
                 })
             );
         }
         if (CustomLevels.levels[level] >= CustomLevels.levels["info"]) {
             myTransports.push(
-                new transports.File({
+                new DailyRotateFile({
                     level: "info",
-                    filename: path.join(location, "info.log"),
+                    filename: path.join(location, "info-%DATE%.log"),
                     format: format.combine(
                         filters.info(),
                         format.timestamp(),
                         format.json()
                     ),
+                    ...dailyRotateParams,
                 })
             );
         }
@@ -147,14 +157,15 @@ class Logger implements ILogger {
                 })
             );
             myTransports.push(
-                new transports.File({
+                new DailyRotateFile({
                     level: "debug",
-                    filename: path.join(location, "debug.log"),
+                    filename: path.join(location, "debug-%DATE%.log"),
                     format: format.combine(
                         filters.debug(),
                         format.timestamp(),
                         format.json()
                     ),
+                    ...dailyRotateParams,
                 })
             );
         }
