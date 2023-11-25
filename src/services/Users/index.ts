@@ -5,8 +5,8 @@ import mongoose from "mongoose";
 import MongoUserRepo from "./database/mongo/mongo-user-repo";
 import { ILogger } from "../../core/logging/i-logger";
 import { IConfigProvider } from "../../core/interfaces/i-config-provider";
-import configurePassport from "./auth/passport";
-import passport from "passport";
+// import configurePassport from "./auth/passport";
+// import passport from "passport";
 
 export class UsersService implements IMicroservice {
     async launch(
@@ -20,9 +20,9 @@ export class UsersService implements IMicroservice {
 
         const userRepo = new MongoUserRepo(connection);
 
-        configurePassport(passport, userRepo, [], logger);
-        app.use(passport.initialize());
-        app.use(passport.session());
+        // configurePassport(passport, userRepo, [], logger);
+        // app.use(passport.initialize());
+        // app.use(passport.session());
 
         return Api(userRepo, logger);
     }

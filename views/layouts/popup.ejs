@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta name="test-string" content="layout-before-head-applied" />
+        <%- include('../partials/head', {title: typeof title != 'undefined' ?
+        title : 'Default Popup Window' }); %>
+        <meta name="test-string" content="layout-after-head-applied" />
+    </head>
+    <body class="container">
+        <meta name="test-string" content="layout-before-body-applied" />
+        <main><%- body %></main>
+        <meta name="test-string" content="layout-after-body-applied" />
+    </body>
+</html>

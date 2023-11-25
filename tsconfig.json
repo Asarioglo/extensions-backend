@@ -10,5 +10,11 @@
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "**/*.spec.ts", "src/services/Users"],
-  "lib": ["es2015"]
+  "lib": ["es2015"],
+  "copyFiles": [
+    {
+      "source": "src/config",
+      "destination": "dist/config"
+    }
+  ]
 }

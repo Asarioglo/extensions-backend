@@ -1,5 +1,5 @@
 export default {
     preset: "ts-jest",
     testEnvironment: "node",
-    setupFiles: ["dotenv/config"],
+    setupFiles: ["dotenv/config", "./copy-views.js"],
 };

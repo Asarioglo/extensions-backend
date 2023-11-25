@@ -9,6 +9,8 @@ import { IConfigProvider } from "./core/interfaces/i-config-provider";
 import { IMicroservice } from "./core/interfaces/i-microservice";
 import { ILogger } from "./core/logging/i-logger";
 import { Server } from "http";
+import path from "path";
+import expressLayouts from "express-ejs-layouts";
 
 type MicroserviceEntry = [route: string, microservice: IMicroservice];
 
@@ -80,6 +82,27 @@ export class App {
         //------------ Bodyparser Configuration ------------//
         this._express.use(express.json());
         this._express.use(express.urlencoded({ extended: false }));
+
+        // ------------ View Engine configuration ------------//
+        this._express.set("view engine", "ejs");
+        this._express.set("views", "dist/views");
+        this._express.use(expressLayouts);
+        this._express.set("layout", "layouts/popup");
+        // This is relative to the dist. Assets are copied there by the copy-static.js
+        // script in the root.
+        this._express.use("/assets", express.static("dist/assets"));
+        // this._express.use("/assets-index", serveIndex(path.join(__dirname)));
+
+        // ------------ Server Info Page ------------//
+        this._express.use("/about", (req, res) => {
+            res.render("pages/about", {
+                title: "About",
+                layout: "layouts/popup",
+            });
+        });
+        this._express.get("/test-view", (req, res) => {
+            res.render("pages/unit-test.ejs");
+        });
     }
 
     async _initRoutes() {
@@ -96,7 +119,7 @@ export class App {
             data: { n: this._customMiddlewares.length },
         });
         this._customMiddlewares.forEach(({ route, middleware }) => {
-            const combined_route = `${this.ROUTE_PREFIX}/${route}`;
+            const combined_route = path.join(this.ROUTE_PREFIX, route);
             this._express.use(combined_route, middleware);
         });
 
@@ -105,7 +128,7 @@ export class App {
             data: { n: this._services.length },
         });
         for (const [route, microservice] of this._services) {
-            const combined_route = `${this.ROUTE_PREFIX}/${route}`;
+            const combined_route = path.join(this.ROUTE_PREFIX, route);
             this._express.use(
                 combined_route,
                 await microservice.launch(

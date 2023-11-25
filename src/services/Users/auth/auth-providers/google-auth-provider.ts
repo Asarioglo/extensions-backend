@@ -6,6 +6,9 @@ import passport from "passport";
 import IUserRepository from "../../database/base/i-user-repository.js";
 import { ILogger } from "../../../../core/logging/i-logger.js";
 import { Router } from "express";
+import { Request, Response } from "express";
+import Tokens from "../tokens.js";
+import { IConfigProvider } from "../../../../core/interfaces/i-config-provider.js";
 
 export type GoogleCredentials = {
     clientID: string;
@@ -19,12 +22,14 @@ export default class GoogleProvider extends AbstractAuthProvider {
     private _callbackURL: string;
     private _logger: ILogger;
     private _userRepo: IUserRepository;
+    private _config: IConfigProvider;
 
     constructor(
         name: string,
         credentials: GoogleCredentials,
         logger: ILogger,
-        userRepo: IUserRepository
+        userRepo: IUserRepository,
+        config: IConfigProvider
     ) {
         super(name);
         this._clientID = credentials.clientID;
@@ -32,6 +37,7 @@ export default class GoogleProvider extends AbstractAuthProvider {
         this._callbackURL = credentials.callbackURL;
         this._logger = logger;
         this._userRepo = userRepo;
+        this._config = config;
         this.name = "google";
     }
 
@@ -84,21 +90,19 @@ export default class GoogleProvider extends AbstractAuthProvider {
     }
 
     addLoginRoutes(router: Router) {
-        router;
-        return;
-        // router.get(
-        //     "/google",
-        //     passport.authenticate("google", {
-        //         scope: [
-        //             "profile",
-        //             "email",
-        //             "openid",
-        //             "https://www.googleapis.com/auth/gmail.send",
-        //         ],
-        //         accessType: "offline",
-        //         prompt: "consent",
-        //     })
-        // );
+        router.get(
+            "/google",
+            passport.authenticate("google", {
+                scope: [
+                    "profile",
+                    "email",
+                    "openid",
+                    "https://www.googleapis.com/auth/gmail.send",
+                ],
+                accessType: "offline",
+                prompt: "consent",
+            })
+        );
 
         // router.get(
         //     "/sub/google",
@@ -116,11 +120,11 @@ export default class GoogleProvider extends AbstractAuthProvider {
         //     })
         // );
 
-        // router.get(
-        //     "/google/callback",
-        //     passport.authenticate("google", { failureRedirect: "/login" }),
-        //     GoogleProvider._handleLogin
-        // );
+        router.get(
+            "/google/callback",
+            passport.authenticate("google", { failureRedirect: "/login" }),
+            this._handleLogin
+        );
     }
 
     async refreshToken(refreshToken: string) {
@@ -135,5 +139,41 @@ export default class GoogleProvider extends AbstractAuthProvider {
         // const { tokens } = await client.refreshToken(refreshToken);
 
         // return tokens.access_token;
+    }
+
+    async _handleLogin(req: Request, res: Response) {
+        const secret = this._config.get("jwt_secret");
+        if (!secret) {
+            this._logger.error("Error getting jwt_secret from config");
+            return res
+                .status(500)
+                .json({ message: "Error getting jwt_secret from config" });
+        }
+
+        const { token, id } = Tokens.createToken(req.user);
+        const { state } = req.query;
+
+        if (state === "sub_user") {
+            res.render("auth/sub_success", {
+                userId: req.user._id,
+                email: req.user.email,
+            });
+        } else {
+            // Save jti to database (add your own logic to save jti)
+            try {
+                await User.findByIdAndUpdate(req.user.id, { jwtId: id });
+                res.render("auth/success", {
+                    auth_token: token,
+                });
+            } catch (err) {
+                logger.error("Error saving jti", {
+                    meta: {
+                        errorObject: err,
+                    },
+                    uuid: req.uuid,
+                });
+                return res.status(500).json({ message: "Error saving jti." });
+            }
+        }
     }
 }
