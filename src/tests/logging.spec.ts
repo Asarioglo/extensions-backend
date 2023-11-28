@@ -240,4 +240,46 @@ describe("Logging", () => {
         testHasData("info");
         testHasData("debug");
     });
+
+    it("Should log with name", async () => {
+        cfgProvider.set("log_location", logDirectory);
+        cfgProvider.set("log_level", "debug");
+        const logger = new Logger(cfgProvider, "TestName");
+
+        await runLogs(logger);
+
+        expect(numberOfFiles()).toBe(5);
+        function testHasName(fileName: string) {
+            const logFile = getLogFileByType(fileName);
+            expect(logFile).toBeTruthy();
+            if (!logFile) {
+                return;
+            }
+            const logFileContent = fs.readFileSync(
+                path.join(logDirectory, logFile),
+                "utf8"
+            );
+            const lines = logFileContent.split("\n");
+            const parsed = JSON.parse(lines[0]);
+            expect(parsed).toBeTruthy();
+            const msg = parsed.message;
+            // the string should being with [TestName]
+            expect(msg.startsWith(`[${logger.getName()}]`)).toBe(true);
+        }
+
+        testHasName("error");
+        testHasName("access");
+        testHasName("warn");
+        testHasName("info");
+        testHasName("debug");
+    });
+
+    it("should create a new named log from an existing log", async () => {
+        cfgProvider.set("log_location", logDirectory);
+        cfgProvider.set("log_level", "debug");
+        const logger = new Logger(cfgProvider);
+        const namedLogger = logger.getNamedLogger("TestName");
+        expect(namedLogger.getName()).toBe("TestName");
+        await runLogs(namedLogger);
+    });
 });

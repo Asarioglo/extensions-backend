@@ -1,55 +1,19 @@
-import winston, {
-    createLogger,
-    transports,
-    format,
-    Logger as WinstonLogger,
-} from "winston";
+import winston, { transports, format, Logger as WinstonLogger } from "winston";
 import DailyRotateFile from "winston-daily-rotate-file";
 import * as Transport from "winston-transport";
 import { ILogger } from "./i-logger";
 import { IConfigProvider } from "../interfaces/i-config-provider";
 import path from "path";
 import os from "os";
-
-const CustomLevels = {
-    levels: {
-        error: 0,
-        access: 1,
-        warn: 2,
-        info: 3,
-        debug: 4,
-    },
-    colors: {
-        error: "red",
-        access: "blue",
-        warn: "yellow",
-        info: "green",
-        debug: "brightBlue",
-    },
-};
-
-const filters = {
-    error: winston.format((info) => {
-        return info.level === "error" ? info : false;
-    }),
-    access: winston.format((info) => {
-        return info.level === "access" ? info : false;
-    }),
-    warn: winston.format((info) => {
-        return info.level === "warn" ? info : false;
-    }),
-    info: winston.format((info) => {
-        return info.level === "info" ? info : false;
-    }),
-    debug: winston.format((info) => {
-        return info.level === "debug" ? info : false;
-    }),
-};
+import { CustomLevels, filters } from "./config";
 
 class Logger implements ILogger {
-    _logger: WinstonLogger;
+    private _logger: WinstonLogger;
+    private _name: string = "";
+    private _configProvider: IConfigProvider;
+    private static _transports: Transport[] | null = null;
 
-    constructor(config: IConfigProvider) {
+    constructor(config: IConfigProvider, name: string = "default") {
         // singleton constructor
         const level = config.get("log_level", "error");
         const userHome = os.homedir();
@@ -57,33 +21,66 @@ class Logger implements ILogger {
             "log_location",
             path.join(userHome, "ext-backend", "logs")
         );
-        this._logger = createLogger({
-            levels: CustomLevels.levels,
-            level,
-            transports: this._getTransports(level, location),
-        });
+        this._name = name;
+        this._configProvider = config;
+
+        if (!Logger._transports) {
+            Logger._transports = this._getTransports(level, location);
+        }
         winston.addColors(CustomLevels.colors);
+
+        if (!winston.loggers.has(this._name)) {
+            winston.loggers.add(this._name, {
+                levels: CustomLevels.levels,
+                level,
+                transports: Logger._transports,
+            });
+        }
+        this._logger = winston.loggers.get(this._name);
     }
 
+    // private static _consoleLogFormatTemplate(i: {
+    //     level: string;
+    //     message: string;
+    //     [key: string]: unknown;
+    // }) {
+    //     return `[${i.label}] ${i.level}: ${i.message}`;
+    // }
+
+    private _buildMessage(msg: string) {
+        if (this._name) {
+            return `[${this._name}] ${msg}`;
+        }
+        return msg;
+    }
+
+    public getName = () => {
+        return this._name;
+    };
+
     public error = (msg: string, ...args: unknown[]) => {
-        this._logger.error(msg, ...args);
+        this._logger.error(this._buildMessage(msg), ...args);
     };
 
     public access = (msg: string, ...args: unknown[]) => {
-        this._logger.log("access", msg, ...args);
+        this._logger.log("access", this._buildMessage(msg), ...args);
     };
 
     public warn = (msg: string, ...args: unknown[]) => {
-        this._logger.warn(msg, ...args);
+        this._logger.warn(this._buildMessage(msg), ...args);
     };
 
     public info = (msg: string, ...args: unknown[]) => {
-        this._logger.info(msg, ...args);
+        this._logger.info(this._buildMessage(msg), ...args);
     };
 
     public debug = (msg: string, ...args: unknown[]) => {
-        this._logger.debug(msg, ...args);
+        this._logger.debug(this._buildMessage(msg), ...args);
     };
+
+    getNamedLogger(name: string) {
+        return new Logger(this._configProvider, name);
+    }
 
     protected _getTransports(level: string, location: string) {
         const dailyRotateParams = {
@@ -153,6 +150,7 @@ class Logger implements ILogger {
                         filters.debug(),
                         format.colorize(),
                         format.simple()
+                        // format.printf(Logger._consoleLogFormatTemplate)
                     ),
                 })
             );

@@ -14,9 +14,10 @@ export class UsersService implements IMicroservice {
         config: IConfigProvider,
         logger: ILogger
     ): Promise<Router> {
-        logger.debug("UsersService.launch()");
+        const local_logger = logger.getNamedLogger("users-service");
+        local_logger.debug("UsersService.launch()");
 
-        const connection = await connectDB(config, logger);
+        const connection = await connectDB(config, local_logger);
 
         const userRepo = new MongoUserRepo(connection);
 
@@ -24,7 +25,7 @@ export class UsersService implements IMicroservice {
         // app.use(passport.initialize());
         // app.use(passport.session());
 
-        return Api(userRepo, logger);
+        return Api(userRepo, local_logger);
     }
 }
 

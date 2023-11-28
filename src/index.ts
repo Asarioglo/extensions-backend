@@ -10,7 +10,9 @@ dotenv.config();
 const env = process.env.NODE_ENV || "development";
 const config = ConfigFactory.create(process.env.NODE_ENV);
 const logger =
-    env === "development" ? new DevLogger(config) : new Logger(config);
+    env === "development"
+        ? new DevLogger(config, "index.ts")
+        : new Logger(config, "index.ts");
 
 const app = new App(config, logger);
 

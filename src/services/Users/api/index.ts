@@ -7,7 +7,8 @@ import about from "./about";
 export default function (userRepo: IUserRepository, logger: ILogger) {
     const router = Router();
 
-    logger.debug("registering users routes");
+    const _logger = logger.getNamedLogger("users-api");
+    _logger.debug("registering users routes");
     router.get("/me", GetUser);
     router.get("/about", about);
 

@@ -1,5 +1,5 @@
 /**
- * @jest-environment ./src/core/testing/test-env-with-config.ts
+ * @jest-environment ./src/core/testing/test-env-with-express-app.ts
  */
 
 import App from "../App";
@@ -11,17 +11,21 @@ import supertest from "supertest";
 
 describe("App", () => {
     let appInstance: App;
+    let logger: ILogger;
     const configProvider = ConfigFactory.create("test");
     const baseURLPrefix = configProvider.get("route_prefix", "");
 
+    beforeAll(async () => {
+        logger = (globalThis.__logger as ILogger).getNamedLogger("AppTest");
+    });
+
     beforeEach(async () => {
-        appInstance = new App(
-            globalThis.__configProvider as ConfigProvider,
-            globalThis.__logger as ILogger
-        );
+        appInstance = globalThis.__app;
+        logger.debug("[App] Initializing app instance");
     });
 
     afterEach(async () => {
+        logger.debug("[App] Cleaning up app instance");
         await appInstance.stop();
     });
 

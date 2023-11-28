@@ -6,4 +6,6 @@ export default class MockLogger implements ILogger {
     info = () => {};
     warn = () => {};
     access = () => {};
+    getName = () => "";
+    getNamedLogger = () => new MockLogger();
 }

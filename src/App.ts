@@ -37,7 +37,7 @@ export class App {
         }
         this.ROUTE_PREFIX = configProvider.get("route_prefix", "");
         this._config = configProvider;
-        this._logger = logger;
+        this._logger = logger.getNamedLogger("app.ts");
     }
 
     addMicroservice(route: string, microservice: IMicroservice) {
