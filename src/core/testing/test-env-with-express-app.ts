@@ -1,7 +1,6 @@
 import MongoTestEnvironment from "./test-env-with-mongo";
 import App from "../../App";
 import { ConfigProvider } from "../config/config-provider";
-import Logger from "../logging/logger";
 
 export default class ExpressAppEnvironment extends MongoTestEnvironment {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -12,8 +11,7 @@ export default class ExpressAppEnvironment extends MongoTestEnvironment {
     async setup(): Promise<void> {
         await super.setup();
         const configProvider = this.global.__configProvider as ConfigProvider;
-        const logger = this.global.__logger as Logger;
-        this.global.__app = new App(configProvider, logger);
+        this.global.__app = new App(configProvider);
     }
 
     async teardown(): Promise<void> {

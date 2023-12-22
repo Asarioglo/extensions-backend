@@ -12,32 +12,44 @@ import { IConfigProvider } from "../core/interfaces/i-config-provider";
 import App from "../App";
 import { StatusCodes } from "http-status-codes";
 import path from "path";
+import { ILogger } from "../core/logging/i-logger";
+import Logger from "../core/logging/logger";
 
 describe("View Engine", () => {
     let app!: App;
     let configProvider: IConfigProvider;
     let uri_prefix!: string;
+    let logger: ILogger;
+
+    beforeAll(async () => {
+        logger = Logger.getLogger("view-engine.spec.ts");
+    });
 
     beforeEach(async () => {
+        logger.debug("[View Engine] Initializing app instance");
         app = globalThis.__app;
         configProvider = globalThis.__configProvider;
         uri_prefix = configProvider.get("route_prefix", "") as string;
     });
 
     afterEach(async () => {
+        logger.debug("[View Engine] Cleaning up app instance");
         await app.stop();
     });
 
     it("should register path with view", async () => {
+        logger.debug("View Engine: should register path with view/////////");
         app.addCustomMiddleware("test-view", (req, res) => {
             res.render("pages/unit-test.ejs");
         });
+        logger.debug("View Engine: Middleware registered ////////   ");
         await app.start();
-
+        logger.debug("App started");
         await supertest(app.getExpressApp())
             .get(path.join(uri_prefix, "test-view"))
             .expect(StatusCodes.OK)
             .expect("Content-Type", /html/);
+        logger.debug("View Engine: Request completed ////////");
     });
 
     it("should fill the layout with head and body", async () => {

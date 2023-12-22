@@ -5,16 +5,13 @@ import mongoose from "mongoose";
 import MongoUserRepo from "./database/mongo/mongo-user-repo";
 import { ILogger } from "../../core/logging/i-logger";
 import { IConfigProvider } from "../../core/interfaces/i-config-provider";
+import Logger from "../../core/logging/logger";
 // import configurePassport from "./auth/passport";
 // import passport from "passport";
 
 export class UsersService implements IMicroservice {
-    async launch(
-        app: Application,
-        config: IConfigProvider,
-        logger: ILogger
-    ): Promise<Router> {
-        logger.debug("UsersService.launch()");
+    async launch(app: Application, config: IConfigProvider): Promise<Router> {
+        const logger = Logger.getLogger("users.index.ts");
 
         const connection = await connectDB(config, logger);
 
@@ -24,7 +21,7 @@ export class UsersService implements IMicroservice {
         // app.use(passport.initialize());
         // app.use(passport.session());
 
-        return Api(userRepo, logger);
+        return Api(userRepo);
     }
 }
 

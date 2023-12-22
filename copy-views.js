@@ -3,31 +3,20 @@
 const fs = require("fs");
 const path = require("path");
 
+const srcServicesRoot = "src/services";
+const srcViewsRoot = "views";
+
 const distDir = "dist";
+const destViews = `${distDir}/views`;
+const destAssets = `${distDir}/assets`;
 
-const serviceDir = "src/services";
-const globalDir = "views";
-const destViews = "dist/views";
-const destAssets = "dist/assets";
+copyStaticFiles(srcViewsRoot, destViews);
+copyStaticFiles(path.join(srcViewsRoot, "assets"), destAssets);
 
-if (!fs.existsSync(distDir)) {
-    fs.mkdirSync(distDir);
-}
-
-if (!fs.existsSync(destViews)) {
-    fs.mkdirSync(destViews);
-}
-if (!fs.existsSync(destAssets)) {
-    fs.mkdirSync(destAssets);
-}
-
-copyStaticFiles(globalDir, destViews);
-copyStaticFiles(path.join(globalDir, "assets"), destAssets);
-
-const services = fs.readdirSync(serviceDir);
-for (const service of services) {
-    const serviceName = service.toLowerCase();
-    const serviceViews = path.join(serviceDir, serviceName, "views");
+const services = fs.readdirSync(srcServicesRoot);
+for (const serviceDir of services) {
+    const serviceName = serviceDir.toLowerCase();
+    const serviceViews = path.join(srcServicesRoot, serviceName, "views");
     const serviceAssets = path.join(serviceViews, "assets");
     const serviceViewsDest = path.join(destViews, serviceName);
     const serviceAssetsDest = path.join(destAssets, serviceName);
@@ -37,31 +26,30 @@ for (const service of services) {
 }
 
 function copyStaticFiles(srcPath, destPath) {
-    // first, delete what's there
-    if (fs.existsSync(destPath)) {
-        const items = fs.readdirSync(destPath);
-        for (const item of items) {
-            const itemPath = path.join(destPath, item);
-            const stats = fs.statSync(itemPath);
-
-            if (stats.isDirectory()) {
-                fs.rmdirSync(itemPath, { recursive: true });
-            } else {
-                fs.unlinkSync(itemPath);
-            }
-        }
-    }
     if (!fs.existsSync(srcPath)) {
         return;
     }
 
-    if (!fs.existsSync(destPath)) {
-        fs.mkdirSync(destPath);
+    // first, delete what's there
+    if (fs.existsSync(destPath)) {
+        const cleanupItems = fs.readdirSync(destPath);
+        for (const cleanupItem of cleanupItems) {
+            const cleanupItemPath = path.join(destPath, cleanupItem);
+            const cleanupItemStats = fs.statSync(cleanupItemPath);
+
+            if (cleanupItemStats.isDirectory()) {
+                fs.rmdirSync(cleanupItemPath, { recursive: true });
+            } else {
+                fs.unlinkSync(cleanupItemPath);
+            }
+        }
+    } else {
+        fs.mkdirSync(destPath, { recursive: true });
     }
 
-    const items = fs.readdirSync(srcPath);
+    const itemsToCopy = fs.readdirSync(srcPath);
 
-    for (const item of items) {
+    for (const item of itemsToCopy) {
         const itemPath = path.join(srcPath, item);
         const stats = fs.statSync(itemPath);
 

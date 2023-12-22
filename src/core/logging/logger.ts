@@ -1,176 +1,127 @@
-import winston, {
-    createLogger,
-    transports,
-    format,
-    Logger as WinstonLogger,
-} from "winston";
-import DailyRotateFile from "winston-daily-rotate-file";
-import * as Transport from "winston-transport";
-import { ILogger } from "./i-logger";
-import { IConfigProvider } from "../interfaces/i-config-provider";
 import path from "path";
 import os from "os";
+import { TransportFactory, TransportTypes } from "./transport-factory";
+import { CustomLevels, LogLevels } from "./config";
+import { ILogger } from "./i-logger";
+import winston from "winston";
+import { mkdirp } from "mkdirp";
 
-const CustomLevels = {
-    levels: {
-        error: 0,
-        access: 1,
-        warn: 2,
-        info: 3,
-        debug: 4,
-    },
-    colors: {
-        error: "red",
-        access: "blue",
-        warn: "yellow",
-        info: "green",
-        debug: "brightBlue",
-    },
-};
+export default class Logger {
+    public static logDirectory: string = path.join(
+        os.homedir(),
+        "ext-backend",
+        "logs"
+    );
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    public static transports: any[] = [];
+    public static level = LogLevels.Error;
+    public static defaultTransportType = TransportTypes.Console;
+    private static _configured: boolean = false;
+    private static _container: winston.Container = new winston.Container();
 
-const filters = {
-    error: winston.format((info) => {
-        return info.level === "error" ? info : false;
-    }),
-    access: winston.format((info) => {
-        return info.level === "access" ? info : false;
-    }),
-    warn: winston.format((info) => {
-        return info.level === "warn" ? info : false;
-    }),
-    info: winston.format((info) => {
-        return info.level === "info" ? info : false;
-    }),
-    debug: winston.format((info) => {
-        return info.level === "debug" ? info : false;
-    }),
-};
-
-class Logger implements ILogger {
-    _logger: WinstonLogger;
-
-    constructor(config: IConfigProvider) {
-        // singleton constructor
-        const level = config.get("log_level", "error");
-        const userHome = os.homedir();
-        const location = config.get(
-            "log_location",
-            path.join(userHome, "ext-backend", "logs")
-        );
-        this._logger = createLogger({
-            levels: CustomLevels.levels,
-            level,
-            transports: this._getTransports(level, location),
-        });
-        winston.addColors(CustomLevels.colors);
+    /**
+     * If the logger with the given label does not exist, it will be created.
+     * If the Logger statics such as transports and level are not configured
+     * prior to this call, it will default to a console transport with the debug level.
+     */
+    public static getLogger(label: string): ILogger {
+        if (!Logger._configured) {
+            Logger._initialize();
+        }
+        if (Logger.transports.length === 0) {
+            Logger.addTransport(TransportTypes.Console, LogLevels.Debug, false);
+        }
+        if (!Logger._container.has(label)) {
+            Logger._container.add(label, {
+                levels: CustomLevels.levels,
+                level: Logger.level,
+                format: winston.format.combine(
+                    winston.format.label({ label })
+                    // winston.format.colorize(),
+                    // winston.format.printf(({ data, level, message }) => {
+                    //     return `${level}: [${label}] ${message} ${
+                    //         data ? JSON.stringify(data) : ""
+                    //     }`;
+                    // })
+                ),
+                transports: Logger.transports,
+            });
+        }
+        const logger = Logger._container.get(label) as ILogger;
+        // // eslint-disable-next-line
+        // (logger as any)._log = (logger as any).log;
+        // // eslint-disable-next-line
+        // (logger as any).log = (
+        //     level: LogLevels,
+        //     msg: string,
+        //     ...args: unknown[]
+        // ) => {
+        //     console.log("logging data !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+        //     // eslint-disable-next-line
+        //     (logger as any)._log(level, msg, ...args);
+        // };
+        return logger;
     }
 
-    public error = (msg: string, ...args: unknown[]) => {
-        this._logger.error(msg, ...args);
-    };
+    private static _initialize() {
+        winston.addColors(CustomLevels.colors);
+        mkdirp.sync(Logger.logDirectory);
+        Logger._configured = true;
+    }
 
-    public access = (msg: string, ...args: unknown[]) => {
-        this._logger.log("access", msg, ...args);
-    };
+    public static setLogDirectory(dir: string) {
+        Logger.logDirectory = dir;
+        mkdirp.sync(Logger.logDirectory);
+    }
 
-    public warn = (msg: string, ...args: unknown[]) => {
-        this._logger.warn(msg, ...args);
-    };
+    public static setDefaultTransportType(type: TransportTypes) {
+        Logger.defaultTransportType = type;
+    }
 
-    public info = (msg: string, ...args: unknown[]) => {
-        this._logger.info(msg, ...args);
-    };
-
-    public debug = (msg: string, ...args: unknown[]) => {
-        this._logger.debug(msg, ...args);
-    };
-
-    protected _getTransports(level: string, location: string) {
-        const dailyRotateParams = {
-            maxSize: "20m",
-            maxFiles: "14d",
-            datePattern: "YYYY-MM-DD",
-        };
-        const myTransports: Transport[] = [
-            new DailyRotateFile({
-                level: "error",
-                filename: path.join(location, "error-%DATE%.log"),
-                format: format.combine(
-                    filters.error(),
-                    format.timestamp(),
-                    format.json()
-                ),
-                ...dailyRotateParams,
-            }),
-        ];
-        if (CustomLevels.levels[level] >= CustomLevels.levels["access"]) {
-            myTransports.push(
-                new DailyRotateFile({
-                    level: "access",
-                    filename: path.join(location, "access-%DATE%.log"),
-                    format: format.combine(
-                        filters.access(),
-                        format.timestamp(),
-                        format.json()
-                    ),
-                    ...dailyRotateParams,
-                })
-            );
+    /**
+     * Will add all necessary transports up to this level. If a transport type
+     * is not explicitly provided, it will be taken from Logger.defaultTransportType.
+     */
+    public static setLevel(level: LogLevels, transportType?: TransportTypes) {
+        if (!Logger._configured) {
+            Logger._initialize();
         }
-        if (CustomLevels.levels[level] >= CustomLevels.levels["warn"]) {
-            myTransports.push(
-                new DailyRotateFile({
-                    level: "warn",
-                    filename: path.join(location, "warn-%DATE%.log"),
-                    format: format.combine(
-                        filters.warn(),
-                        format.timestamp(),
-                        format.json()
-                    ),
-                    ...dailyRotateParams,
-                })
+        const levelPriority = CustomLevels.levels[level];
+        const neededLevels = Object.keys(CustomLevels.levels).filter(
+            (key) => CustomLevels.levels[key] <= levelPriority
+        );
+        Logger.resetLogger();
+        neededLevels.forEach((neededLevel) => {
+            Logger.addTransport(
+                transportType || Logger.defaultTransportType,
+                neededLevel as LogLevels,
+                true
             );
+        });
+        Logger.level = level;
+    }
+
+    public static resetLogger() {
+        Logger.transports = [];
+        this._container.close();
+        Logger._container = new winston.Container();
+    }
+
+    public static addTransport(
+        type: TransportTypes,
+        level: LogLevels,
+        restrictToLevel?: boolean
+    ) {
+        if (!Logger._configured) {
+            Logger._initialize();
         }
-        if (CustomLevels.levels[level] >= CustomLevels.levels["info"]) {
-            myTransports.push(
-                new DailyRotateFile({
-                    level: "info",
-                    filename: path.join(location, "info-%DATE%.log"),
-                    format: format.combine(
-                        filters.info(),
-                        format.timestamp(),
-                        format.json()
-                    ),
-                    ...dailyRotateParams,
-                })
-            );
-        }
-        if (CustomLevels.levels[level] >= CustomLevels.levels["debug"]) {
-            myTransports.push(
-                new transports.Console({
-                    level: "debug",
-                    format: format.combine(
-                        filters.debug(),
-                        format.colorize(),
-                        format.simple()
-                    ),
-                })
-            );
-            myTransports.push(
-                new DailyRotateFile({
-                    level: "debug",
-                    filename: path.join(location, "debug-%DATE%.log"),
-                    format: format.combine(
-                        filters.debug(),
-                        format.timestamp(),
-                        format.json()
-                    ),
-                    ...dailyRotateParams,
-                })
-            );
-        }
-        return myTransports;
+        Logger.transports.push(
+            TransportFactory.createTransport(
+                type,
+                level,
+                Logger.logDirectory,
+                restrictToLevel
+            )
+        );
     }
 }
-
-export default Logger;
