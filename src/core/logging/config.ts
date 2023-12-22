@@ -1,36 +1,44 @@
 import winston from "winston";
 
+export enum LogLevels {
+    Error = "error",
+    HTTP = "http",
+    Warn = "warn",
+    Info = "info",
+    Debug = "debug",
+}
+
 export const CustomLevels = {
     levels: {
         error: 0,
-        access: 1,
+        http: 1,
         warn: 2,
         info: 3,
         debug: 4,
     },
     colors: {
         error: "red",
-        access: "blue",
+        http: "blue",
         warn: "yellow",
         info: "green",
         debug: "brightBlue",
     },
 };
 
-export const filters = {
-    error: winston.format((info) => {
+export const Filters = {
+    [LogLevels.Error]: winston.format((info) => {
         return info.level === "error" ? info : false;
     }),
-    access: winston.format((info) => {
-        return info.level === "access" ? info : false;
+    [LogLevels.HTTP]: winston.format((info) => {
+        return info.level === "http" ? info : false;
     }),
-    warn: winston.format((info) => {
+    [LogLevels.Warn]: winston.format((info) => {
         return info.level === "warn" ? info : false;
     }),
-    info: winston.format((info) => {
+    [LogLevels.Info]: winston.format((info) => {
         return info.level === "info" ? info : false;
     }),
-    debug: winston.format((info) => {
+    [LogLevels.Debug]: winston.format((info) => {
         return info.level === "debug" ? info : false;
     }),
 };

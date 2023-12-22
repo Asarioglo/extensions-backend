@@ -1,20 +1,20 @@
 import App from "./App";
 import { ConfigFactory } from "./core/config/config-factory";
 import dotenv from "dotenv";
-import Logger from "./core/logging/logger";
-import DevLogger from "./core/logging/dev-logger";
 import { UsersService } from "./services/Users";
+import Logger from "./core/logging/logger";
+import { LogLevels } from "./core/logging/config";
 
 dotenv.config();
 
 const env = process.env.NODE_ENV || "development";
 const config = ConfigFactory.create(process.env.NODE_ENV);
-const logger =
-    env === "development"
-        ? new DevLogger(config, "index.ts")
-        : new Logger(config, "index.ts");
 
-const app = new App(config, logger);
+// Otherwise default to Console logger with Debug level
+if (env !== "development") Logger.setLevel(LogLevels.HTTP);
+const logger = Logger.getLogger("index.ts");
+
+const app = new App(config);
 
 app.addMicroservice("/users", new UsersService());
 

@@ -11,6 +11,7 @@ import { ILogger } from "./core/logging/i-logger";
 import { Server } from "http";
 import path from "path";
 import expressLayouts from "express-ejs-layouts";
+import Logger from "./core/logging/logger";
 
 type MicroserviceEntry = [route: string, microservice: IMicroservice];
 
@@ -30,14 +31,14 @@ export class App {
     private _state: "INITIALIZED" | "STARTED" | "STOPPED" = "INITIALIZED";
     private _logger: ILogger;
 
-    constructor(configProvider: IConfigProvider, logger: ILogger) {
+    constructor(configProvider: IConfigProvider) {
         this.PORT = configProvider.get("port", null);
         if (this.PORT === null) {
             throw new Error("port must be present in the config provider.");
         }
         this.ROUTE_PREFIX = configProvider.get("route_prefix", "");
         this._config = configProvider;
-        this._logger = logger.getNamedLogger("app.ts");
+        this._logger = Logger.getLogger("app.ts");
     }
 
     addMicroservice(route: string, microservice: IMicroservice) {
@@ -110,7 +111,7 @@ export class App {
         //------------ Logging ------------//
         this._logger.debug("Initializing request logging");
         this._express.use("/", (req, res, next) => {
-            this._logger.access(`[${req.method}] ${req.url}`);
+            this._logger.http(`[${req.method}] ${req.url}`);
             next();
         });
 
@@ -131,11 +132,7 @@ export class App {
             const combined_route = path.join(this.ROUTE_PREFIX, route);
             this._express.use(
                 combined_route,
-                await microservice.launch(
-                    this._express,
-                    this._config,
-                    this._logger
-                )
+                await microservice.launch(this._express, this._config)
             );
         }
 

@@ -1,13 +1,13 @@
 import { Router } from "express";
 import GetUser from "./get-user";
 import IUserRepository from "../database/base/i-user-repository";
-import { ILogger } from "../../../core/logging/i-logger";
 import about from "./about";
+import Logger from "../../../core/logging/logger";
 
-export default function (userRepo: IUserRepository, logger: ILogger) {
+export default function (userRepo: IUserRepository) {
     const router = Router();
 
-    const _logger = logger.getNamedLogger("users-api");
+    const _logger = Logger.getLogger("users-api");
     _logger.debug("registering users routes");
     router.get("/me", GetUser);
     router.get("/about", about);

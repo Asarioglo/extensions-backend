@@ -6,6 +6,7 @@ import App from "../App";
 import { ConfigFactory } from "../core/config/config-factory";
 import { ConfigProvider } from "../core/config/config-provider";
 import { ILogger } from "../core/logging/i-logger";
+import Logger from "../core/logging/logger";
 import { MockMicroservice } from "../core/testing/mock-microservice";
 import supertest from "supertest";
 
@@ -16,7 +17,7 @@ describe("App", () => {
     const baseURLPrefix = configProvider.get("route_prefix", "");
 
     beforeAll(async () => {
-        logger = (globalThis.__logger as ILogger).getNamedLogger("AppTest");
+        logger = Logger.getLogger("app.spec.ts");
     });
 
     beforeEach(async () => {
@@ -41,11 +42,11 @@ describe("App", () => {
     it("Should fail with no required configs", () => {
         const configProvider = new ConfigProvider();
         expect(() => {
-            new App(configProvider, globalThis.__logger as ILogger);
+            new App(configProvider);
         }).toThrow();
         configProvider.set("port", "1234");
         expect(() => {
-            new App(configProvider, globalThis.__logger as ILogger);
+            new App(configProvider);
         }).not.toThrow();
     });
 
@@ -151,5 +152,18 @@ describe("App", () => {
                 [method](`${baseURLPrefix}/mock/${endpoint}`)
                 .expect(status);
         }
+    });
+
+    it("should test shift", () => {
+        const arr = [0, 0];
+        const m = 0;
+        const n: number = 2;
+        if (n !== 0) {
+            for (let i = m - 1; i >= 0; i--) {
+                arr[i + n] = arr[i];
+                arr[i] = 0;
+            }
+        }
+        console.log(arr);
     });
 });

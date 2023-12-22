@@ -13,6 +13,7 @@ import App from "../App";
 import { StatusCodes } from "http-status-codes";
 import path from "path";
 import { ILogger } from "../core/logging/i-logger";
+import Logger from "../core/logging/logger";
 
 describe("View Engine", () => {
     let app!: App;
@@ -21,9 +22,7 @@ describe("View Engine", () => {
     let logger: ILogger;
 
     beforeAll(async () => {
-        logger = (globalThis.__logger as ILogger).getNamedLogger(
-            "ViewEngineTest"
-        );
+        logger = Logger.getLogger("view-engine.spec.ts");
     });
 
     beforeEach(async () => {
