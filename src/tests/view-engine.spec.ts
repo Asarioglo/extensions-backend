@@ -43,7 +43,7 @@ describe("View Engine", () => {
             res.render("pages/unit-test.ejs");
         });
         logger.debug("View Engine: Middleware registered ////////   ");
-        await app.start();
+        await app.start(true);
         logger.debug("App started");
         await supertest(app.getExpressApp())
             .get(path.join(uri_prefix, "test-view"))
@@ -56,7 +56,7 @@ describe("View Engine", () => {
         app.addCustomMiddleware("test-layout-compilation", (req, res) => {
             res.render("pages/unit-test.ejs");
         });
-        await app.start();
+        await app.start(true);
 
         const response = await supertest(app.getExpressApp())
             .get(path.join(uri_prefix, "test-layout-compilation"))
@@ -75,7 +75,7 @@ describe("View Engine", () => {
         app.addCustomMiddleware("test-default-variables", (req, res) => {
             res.render("pages/unit-test.ejs");
         });
-        await app.start();
+        await app.start(true);
 
         const response = await supertest(app.getExpressApp())
             .get(path.join(uri_prefix, "test-default-variables"))
@@ -93,7 +93,7 @@ describe("View Engine", () => {
                 body_test_variable: "Custom Body Test Variable",
             });
         });
-        await app.start();
+        await app.start(true);
 
         const response = await supertest(app.getExpressApp())
             .get(path.join(uri_prefix, "test-custom-variables"))
@@ -110,7 +110,7 @@ describe("View Engine", () => {
                 layout: "layouts/test-layout",
             });
         });
-        await app.start();
+        await app.start(true);
 
         const response = await supertest(app.getExpressApp())
             .get(path.join(uri_prefix, "test-different-layout"))

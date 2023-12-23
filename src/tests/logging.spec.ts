@@ -40,7 +40,6 @@ describe("Logging", () => {
     let configProvider: IConfigProvider;
     const logDirectory = path.join(os.homedir(), "ext-backend", "logs-test");
     let logFiles: string[] | null = null;
-    let debutLogger: ILogger;
 
     function numberOfFiles() {
         if (!fs.existsSync(logDirectory)) {
@@ -74,7 +73,6 @@ describe("Logging", () => {
 
     beforeAll(() => {
         Logger.setLogDirectory(logDirectory);
-        debutLogger = globalThis.__logger;
     });
 
     beforeEach(() => {

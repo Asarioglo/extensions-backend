@@ -2,6 +2,8 @@
 // tsc building the project. So we use require instead.
 const fs = require("fs");
 const path = require("path");
+const mkdirp = require("mkdirp");
+const rimraf = require("rimraf");
 
 const srcServicesRoot = "src/services";
 const srcViewsRoot = "views";
@@ -10,7 +12,12 @@ const distDir = "dist";
 const destViews = `${distDir}/views`;
 const destAssets = `${distDir}/assets`;
 
+console.log("Deleting dest directory...");
+rimraf.sync(distDir);
+
+console.log("Copying global views...");
 copyStaticFiles(srcViewsRoot, destViews);
+console.log("Copying global assets...");
 copyStaticFiles(path.join(srcViewsRoot, "assets"), destAssets);
 
 const services = fs.readdirSync(srcServicesRoot);
@@ -21,7 +28,9 @@ for (const serviceDir of services) {
     const serviceViewsDest = path.join(destViews, serviceName);
     const serviceAssetsDest = path.join(destAssets, serviceName);
     // A little duplication will happen here, but it's not a big deal... yet.
+    console.log(`Copying ${serviceName} views...`);
     copyStaticFiles(serviceViews, serviceViewsDest);
+    console.log(`Copying ${serviceName} assets...`);
     copyStaticFiles(serviceAssets, serviceAssetsDest);
 }
 
@@ -30,22 +39,7 @@ function copyStaticFiles(srcPath, destPath) {
         return;
     }
 
-    // first, delete what's there
-    if (fs.existsSync(destPath)) {
-        const cleanupItems = fs.readdirSync(destPath);
-        for (const cleanupItem of cleanupItems) {
-            const cleanupItemPath = path.join(destPath, cleanupItem);
-            const cleanupItemStats = fs.statSync(cleanupItemPath);
-
-            if (cleanupItemStats.isDirectory()) {
-                fs.rmdirSync(cleanupItemPath, { recursive: true });
-            } else {
-                fs.unlinkSync(cleanupItemPath);
-            }
-        }
-    } else {
-        fs.mkdirSync(destPath, { recursive: true });
-    }
+    mkdirp.mkdirpSync(destPath, { recursive: true });
 
     const itemsToCopy = fs.readdirSync(srcPath);
 

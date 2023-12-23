@@ -145,7 +145,12 @@ export class App {
         });
     }
 
-    async start(): Promise<boolean> {
+    /**
+     * Random port is used to run tests. Jest runs tests in parallel, so sometimes
+     * collision happens on ports which leads to test deadlocks.
+     * This boolean, if true, will run the server on any random port.
+     */
+    async start(randomPort: boolean = false): Promise<boolean> {
         if (this._server !== null) {
             this._logger.error("Attempted to start server twice.");
             throw new Error("Server is already running.");
@@ -158,7 +163,8 @@ export class App {
 
         return await new Promise((resolve, reject) => {
             try {
-                this._server = this._express.listen(this.PORT, () => {
+                const port = randomPort ? 0 : parseInt(this.PORT);
+                this._server = this._express.listen(port, () => {
                     this._state = "STARTED";
                     this._logger.info(`Server is running on port ${this.PORT}`);
                     resolve(true);

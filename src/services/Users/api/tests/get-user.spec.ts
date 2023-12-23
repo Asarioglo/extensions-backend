@@ -35,7 +35,7 @@ describe("GET /users/me", () => {
         logger.debug("[GET /users/me] should return 200 OK");
         app.addCustomMiddleware("test-get-user", getUser);
         logger.debug("[GET /users/me] Middleware registered");
-        await app.start();
+        await app.start(true);
         logger.debug("[GET /users/me] App started");
         await supertest(app.getExpressApp())
             .get(`${uri_prefix}/test-get-user`)

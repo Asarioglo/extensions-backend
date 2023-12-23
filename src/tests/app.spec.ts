@@ -22,11 +22,9 @@ describe("App", () => {
 
     beforeEach(async () => {
         appInstance = globalThis.__app;
-        logger.debug("[App] Initializing app instance");
     });
 
     afterEach(async () => {
-        logger.debug("[App] Cleaning up app instance");
         await appInstance.stop();
     });
 

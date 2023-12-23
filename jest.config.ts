@@ -3,7 +3,7 @@ import type { Config } from "jest";
 const config: Config = {
     preset: "ts-jest",
     testEnvironment: "node",
-    setupFiles: ["dotenv/config", "./copy-views.js"],
+    setupFiles: ["<rootDir>/copy-views.js", "dotenv/config"],
     testTimeout: 30000,
 };
 
