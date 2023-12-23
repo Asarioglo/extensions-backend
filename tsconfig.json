@@ -7,6 +7,7 @@
     "sourceMap": true,
     "outDir": "dist",
     "sourceRoot": "src",
+    "resolveJsonModule": true
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "**/*.spec.ts", "src/services/Users"],

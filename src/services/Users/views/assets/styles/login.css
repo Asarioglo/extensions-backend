@@ -1,0 +1,68 @@
+.buttons-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    margin-top: 4em;
+}
+
+.google-button-div {
+    height: 50px;
+    width: 240px;
+    border: none;
+    text-align: center;
+    box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.25);
+    font-size: 16px;
+    line-height: 48px;
+    display: block;
+    border-radius: 1px;
+    transition: background-color 0.218s, border-color 0.218s, box-shadow 0.218s;
+    font-family: "Roboto", arial, sans-serif;
+    cursor: pointer;
+    user-select: none;
+    background-color: rgb(66, 133, 244);
+    color: #fff;
+    /* font-weight: 100; */
+    --webkit-font-smoothing: antialiased;
+}
+
+.google-icon-style {
+    width: 48px;
+    height: 48px;
+    text-align: center;
+    vertical-align: center;
+    display: block;
+    margin-top: 1px;
+    margin-left: 1px;
+    float: left;
+    background-color: #fff;
+    border-radius: 1px;
+    white-space: nowrap;
+}
+
+.google-svg-style {
+    width: 48px;
+    height: 48px;
+    display: block;
+}
+
+.google-button-div:hover {
+    box-shadow: 0 0 3px 3px rgba(66, 133, 244, 0.3);
+    transition: background-color 0.218s, border-color 0.218s, box-shadow 0.218s;
+}
+
+.login-page-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.cancel-button {
+    outline: none;
+    border: none;
+    margin: 10px;
+}
+
+.success-button {
+    width: 100%;
+}

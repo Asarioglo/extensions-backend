@@ -1,0 +1,9 @@
+{
+    "auth": {
+        "title": "Welcome to Dat Empower",
+        "loginHeadingText": "Choose a provider",
+        "loginSubheadingText": "To login to Dat-Empower",
+        "loginCancelText": "Cancel",
+        "googleButtonText": "Sigh in with Google"
+    }
+}

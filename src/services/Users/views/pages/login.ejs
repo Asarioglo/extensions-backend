@@ -1,0 +1,34 @@
+<div class="centered-page-container">
+    <link rel="stylesheet" href="/assets/users/styles/login.css" />
+
+    <div class="logo-container">
+        <img src="/assets/icons/128.png" class="main-logo" />
+    </div>
+    <!-- <h2 class="text-center mb-3">Dat-Empower Login</h2> -->
+    <h4 class="heading-text"><%= loginHeadingText %></h3>
+    <div class="subheading-text"><%= loginSubheadingText %></div>
+
+    <script>
+        handleGoogleLogin = (event) => {
+            window.location.href = "/api/v1/auth/google";
+        };
+    </script>
+
+    <div class="buttons-container">
+        <div
+            class="google-button-div"
+            role="button"
+            onclick="handleGoogleLogin(event)"
+        >
+            <img
+                src="/assets/icons/google-button.svg"
+                class="google-icon-style google-svg-style"
+            />
+            <span><%= googleButtonText %></span>
+        </div>
+    </div>
+    <button class="btn btn-outline-danger cancel-button" onclick="closeMe()">
+        <%= loginCancelText %>
+    </button>
+
+</div>
