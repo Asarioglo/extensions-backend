@@ -36,7 +36,7 @@ describe("Tokens", () => {
     it("Should decode a token correctly", () => {
         const tokenObj = Tokens.createToken(secret, mockUser as IUser);
         const { token } = tokenObj;
-        const decoded: TokenPayload = Tokens.decodeToken(
+        const decoded: TokenPayload = Tokens.validateToken(
             token,
             secret,
             globalThis.__logger as ILogger
@@ -51,7 +51,7 @@ describe("Tokens", () => {
         const now = Math.floor(Date.now() / 1000);
         const tokenObj = Tokens.createToken(secret, mockUser as IUser);
         const { token } = tokenObj;
-        const decoded: TokenPayload = Tokens.decodeToken(
+        const decoded: TokenPayload = Tokens.validateToken(
             token,
             secret,
             globalThis.__logger as ILogger
@@ -63,7 +63,7 @@ describe("Tokens", () => {
         const now = Math.floor(Date.now() / 1000);
         const tokenObj = Tokens.createToken(secret, mockUser as IUser, 10);
         const { token } = tokenObj;
-        const decoded: TokenPayload = Tokens.decodeToken(
+        const decoded: TokenPayload = Tokens.validateToken(
             token,
             secret,
             globalThis.__logger as ILogger
@@ -79,10 +79,10 @@ describe("Tokens", () => {
         const tokenObj = Tokens.createToken(secret, mockUser as IUser, -1);
         const { token } = tokenObj;
         expect(() => {
-            Tokens.decodeToken(token, secret, globalThis.__logger as ILogger);
+            Tokens.validateToken(token, secret, globalThis.__logger as ILogger);
         }).toThrow();
         try {
-            Tokens.decodeToken(token, secret, globalThis.__logger as ILogger);
+            Tokens.validateToken(token, secret, globalThis.__logger as ILogger);
         } catch (err) {
             expect(err).toBeInstanceOf(TokenError);
         }
@@ -91,7 +91,7 @@ describe("Tokens", () => {
     it("Should reject tokens with invalid signature", () => {
         const tokenObj = Tokens.createToken(secret, mockUser as IUser);
         const { token } = tokenObj;
-        const decoded: TokenPayload = Tokens.decodeToken(
+        const decoded: TokenPayload = Tokens.validateToken(
             token,
             secret,
             globalThis.__logger as ILogger
@@ -103,7 +103,7 @@ describe("Tokens", () => {
         // change the secret
         const invalidSecret = "invalid_secret";
         expect(() => {
-            Tokens.decodeToken(
+            Tokens.validateToken(
                 token,
                 invalidSecret,
                 globalThis.__logger as ILogger
@@ -114,7 +114,7 @@ describe("Tokens", () => {
     it("Should reject token with mismatching jtis", () => {
         const tokenObj = Tokens.createToken(secret, mockUser as IUser);
         const { token, id } = tokenObj;
-        const decoded: TokenPayload = Tokens.decodeToken(
+        const decoded: TokenPayload = Tokens.validateToken(
             token,
             secret,
             globalThis.__logger as ILogger
@@ -148,7 +148,7 @@ describe("Tokens", () => {
         );
         const { token, id } = tokenObj;
         expect(id).toBe(mockUser.jwtId);
-        const payload = Tokens.decodeToken(
+        const payload = Tokens.validateToken(
             token,
             secret,
             globalThis.__logger as ILogger

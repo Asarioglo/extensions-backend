@@ -1,4 +1,4 @@
-import AbstractAuthProvider from "../abstract-auth-provider.js";
+import AbstractIDProvider from "../abstract-id-provider.js";
 // import { OAuth2Client } from "google-auth-library";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import passport from "passport";
@@ -9,6 +9,8 @@ import { Router } from "express";
 import { Request, Response } from "express";
 import Tokens from "../tokens.js";
 import { IConfigProvider } from "../../../../core/interfaces/i-config-provider.js";
+import Logger from "../../../../core/logging/logger.js";
+import { IUser } from "../../models/i-user.js";
 
 export type GoogleCredentials = {
     clientID: string;
@@ -16,7 +18,7 @@ export type GoogleCredentials = {
     callbackURL: string;
 };
 
-export default class GoogleProvider extends AbstractAuthProvider {
+export default class GoogleIDProvider extends AbstractIDProvider {
     private _clientID: string;
     private _clientSecret: string;
     private _callbackURL: string;
@@ -27,7 +29,6 @@ export default class GoogleProvider extends AbstractAuthProvider {
     constructor(
         name: string,
         credentials: GoogleCredentials,
-        logger: ILogger,
         userRepo: IUserRepository,
         config: IConfigProvider
     ) {
@@ -35,14 +36,16 @@ export default class GoogleProvider extends AbstractAuthProvider {
         this._clientID = credentials.clientID;
         this._clientSecret = credentials.clientSecret;
         this._callbackURL = credentials.callbackURL;
-        this._logger = logger;
+        this._logger = Logger.getLogger("google-auth-provider");
         this._userRepo = userRepo;
         this._config = config;
         this.name = "google";
     }
 
-    addPassportStrategy(passport: passport.PassportStatic) {
+    addPassportStrategies(passport: passport.PassportStatic, router: Router) {
+        this.addLoginRoutes(router);
         passport.use(
+            "google_main",
             new GoogleStrategy(
                 {
                     clientID: this._clientID,
@@ -50,7 +53,7 @@ export default class GoogleProvider extends AbstractAuthProvider {
                     callbackURL: this._callbackURL,
                     passReqToCallback: true,
                 },
-                async function (req, accessToken, refreshToken, profile, done) {
+                async (req, accessToken, refreshToken, profile, done) => {
                     try {
                         const email = profile.emails?.[0].value;
                         if (!email) {
@@ -59,14 +62,14 @@ export default class GoogleProvider extends AbstractAuthProvider {
                             });
                             throw new Error("Email not found in profile");
                         }
-                        const user = await this._userRepo.findOrCreate(
-                            profile.id,
-                            "google",
+                        const user = await this._userRepo.findOrCreate({
+                            id: profile.id,
+                            provider: "google",
                             email,
-                            accessToken,
+                            token: accessToken,
                             refreshToken,
-                            profile.displayName
-                        );
+                            name: profile.displayName,
+                        });
                         if (!user) {
                             this._logger.error(
                                 "Couldn't create user. Object returned form findOrCreate is undefined",
@@ -92,7 +95,7 @@ export default class GoogleProvider extends AbstractAuthProvider {
     addLoginRoutes(router: Router) {
         router.get(
             "/google",
-            passport.authenticate("google", {
+            passport.authenticate("google_main", {
                 scope: [
                     "profile",
                     "email",
@@ -101,7 +104,7 @@ export default class GoogleProvider extends AbstractAuthProvider {
                 ],
                 accessType: "offline",
                 prompt: "consent",
-            })
+            } as passport.AuthenticateOptions)
         );
 
         // router.get(
@@ -149,28 +152,37 @@ export default class GoogleProvider extends AbstractAuthProvider {
                 .status(500)
                 .json({ message: "Error getting jwt_secret from config" });
         }
+        if (!req.user) {
+            this._logger.error("Error getting user from request");
+            return res
+                .status(500)
+                .json({ message: "Error logging in, please try again later." });
+        }
 
-        const { token, id } = Tokens.createToken(req.user);
+        const user = req.user as IUser;
+
+        const { token, id } = Tokens.createToken(secret, user);
         const { state } = req.query;
 
         if (state === "sub_user") {
             res.render("auth/sub_success", {
-                userId: req.user._id,
-                email: req.user.email,
+                userId: user.id,
+                email: user.email,
             });
         } else {
             // Save jti to database (add your own logic to save jti)
             try {
-                await User.findByIdAndUpdate(req.user.id, { jwtId: id });
+                await this._userRepo.update(user, { jwtId: id });
                 res.render("auth/success", {
                     auth_token: token,
                 });
             } catch (err) {
-                logger.error("Error saving jti", {
+                this._logger.error("Error saving jti", {
                     meta: {
                         errorObject: err,
                     },
-                    uuid: req.uuid,
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    uuid: (req as any).uuid || "",
                 });
                 return res.status(500).json({ message: "Error saving jti." });
             }

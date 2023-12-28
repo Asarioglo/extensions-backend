@@ -6,8 +6,11 @@ import MongoUserRepo from "./database/mongo/mongo-user-repo";
 import { ILogger } from "../../core/logging/i-logger";
 import { IConfigProvider } from "../../core/interfaces/i-config-provider";
 import Logger from "../../core/logging/logger";
-// import configurePassport from "./auth/passport";
-// import passport from "passport";
+import passport from "passport";
+import configurePassport from "./auth/passport";
+import GoogleProvider, {
+    GoogleCredentials,
+} from "./auth/id-providers/google-id-provider";
 
 export class UsersService implements IMicroservice {
     async launch(app: Application, config: IConfigProvider): Promise<Router> {
@@ -17,11 +20,25 @@ export class UsersService implements IMicroservice {
 
         const userRepo = new MongoUserRepo(connection);
 
-        // configurePassport(passport, userRepo, [], logger);
-        // app.use(passport.initialize());
-        // app.use(passport.session());
+        const googleConfig: GoogleCredentials = {
+            clientID: config.get("google_client_id"),
+            clientSecret: config.get("google_client_secret"),
+            callbackURL: config.get("google_callback_url"),
+        };
 
-        return Api(userRepo);
+        const googleProvider = new GoogleProvider(
+            "google-main",
+            googleConfig,
+            userRepo,
+            config
+        );
+
+        const router = Api(userRepo);
+        app.use(passport.initialize());
+        app.use(passport.session());
+        configurePassport(userRepo, router, [googleProvider]);
+
+        return router;
     }
 }
 

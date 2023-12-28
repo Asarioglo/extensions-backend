@@ -6,8 +6,8 @@ import configurePassport from "../passport";
 import IUserRepository from "../../database/base/i-user-repository";
 import { IUser, TestUserData } from "../../models/i-user";
 import { RepoCallback } from "../../../../core/interfaces/i-repository";
-import AbstractAuthProvider from "../abstract-auth-provider";
-import { ILogger } from "../../../../core/logging/i-logger";
+import AbstractIDProvider from "../abstract-id-provider";
+import { Router } from "express";
 
 class MockPassport {
     static serializeUser = jest.fn();
@@ -31,7 +31,7 @@ class TestPassport {
     }
 }
 
-class MockAuthProvider extends AbstractAuthProvider {
+class MockAuthProvider extends AbstractIDProvider {
     constructor() {
         super("mock_provider");
     }
@@ -83,11 +83,11 @@ describe("passport", () => {
 
     it("should call serialize and deserialize user functions", () => {
         configurePassport(
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            MockPassport as any,
             new MockUserRepo(),
+            Router(),
             [],
-            globalThis.__logger as ILogger
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            MockPassport as any
         );
         expect(MockPassport.serializeUser).toHaveBeenCalled();
         expect(MockPassport.deserializeUser).toHaveBeenCalled();
@@ -95,11 +95,11 @@ describe("passport", () => {
 
     it("should serialize and deserialize user by ID", (done) => {
         configurePassport(
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            TestPassport as any,
             new MockUserRepo(),
+            Router(),
             [],
-            globalThis.__logger as ILogger
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            TestPassport as any
         );
         const xpressDone = jest.fn();
         TestPassport.serializeUserFn?.(TestUserData, xpressDone);
@@ -117,11 +117,11 @@ describe("passport", () => {
     it("should iterate through providers and add passport strategies", () => {
         const providers = [new MockAuthProvider(), new MockAuthProvider()];
         configurePassport(
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            TestPassport as any,
             new MockUserRepo(),
+            Router(),
             providers,
-            globalThis.__logger as ILogger
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            TestPassport as any
         );
         expect(providers[0].addPassportStrategy).toHaveBeenCalled();
         expect(providers[0].addPassportStrategy).toHaveBeenCalledWith(

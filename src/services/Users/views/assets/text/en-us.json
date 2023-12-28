@@ -5,5 +5,10 @@
         "loginSubheadingText": "To login to Dat-Empower",
         "loginCancelText": "Cancel",
         "googleButtonText": "Sigh in with Google"
+    },
+    "errors": {
+        "authBugLogoutAndLoginAgain": "It looks like there might be a small glitch. Please give it another try, and if you continue to encounter this issue, logging out and then back in can often help. Thank you for your understanding!.",
+        "noToken": "No token provided, can't authenticate",
+        "invalidToken": "Invalid token provided, can't authenticate"
     }
 }

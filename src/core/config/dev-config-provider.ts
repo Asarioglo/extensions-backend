@@ -6,6 +6,10 @@ export class DevConfigProvider extends ConfigProvider {
         ["ROUTE_PREFIX", "route_prefix", ""],
         ["USERS_MONGO_URI", "users_mongo_uri"],
         ["USERS_MONGO_DB_NAME", "users_mongo_db_name", "test"],
+        ["JWT_SECRET", "jwt_secret"],
+        ["GOOGLE_CLIENT_ID", "google_client_id"],
+        ["GOOGLE_CLIENT_SECRET", "google_client_secret"],
+        ["GOOGLE_CALLBACK", "google_callback"],
     ];
     constructor() {
         super();
