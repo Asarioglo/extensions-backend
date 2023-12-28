@@ -12,6 +12,7 @@ import { Server } from "http";
 import path from "path";
 import expressLayouts from "express-ejs-layouts";
 import Logger from "./core/logging/logger";
+import { v4 as uuid4 } from "uuid";
 
 type MicroserviceEntry = [route: string, microservice: IMicroservice];
 
@@ -112,6 +113,8 @@ export class App {
         this._logger.debug("Initializing request logging");
         this._express.use("/", (req, res, next) => {
             this._logger.http(`[${req.method}] ${req.url}`);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (req as any).uuid = uuid4();
             next();
         });
 

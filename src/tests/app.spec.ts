@@ -143,6 +143,7 @@ describe("App", () => {
             ["post", "post_success_text", 200],
             ["post", "post_failure_500", 500],
             ["post", "post_failure_401", 401],
+            ["get", "test_uuid", 200],
         ];
 
         for (const [method, endpoint, status] of endpoints) {
@@ -150,6 +151,7 @@ describe("App", () => {
                 [method](`${baseURLPrefix}/mock/${endpoint}`)
                 .expect(status);
         }
+        expect(mockMicroservice.uuid_received).toBeTruthy();
     });
 
     it("should test shift", () => {

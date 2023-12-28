@@ -3,11 +3,19 @@ import { Router } from "express";
 
 export class MockMicroservice implements IMicroservice {
     launch_called = false;
+    uuid_received = false;
 
     public async launch(): Promise<Router> {
         const router = Router();
 
         router.get("/", (req, res) => {
+            res.send("success");
+        });
+
+        router.get("/test_uuid", (req, res) => {
+            if ("uuid" in req) {
+                this.uuid_received = true;
+            }
             res.send("success");
         });
 
