@@ -12,26 +12,35 @@ const distDir = "dist";
 const destViews = `${distDir}/views`;
 const destAssets = `${distDir}/assets`;
 
-console.log("Deleting dest directory...");
-rimraf.sync(distDir);
+const debugOutput = false;
+const log = () => {
+    if (debugOutput) {
+        console.log(...arguments);
+    }
+};
 
-console.log("Copying global views...");
-copyStaticFiles(srcViewsRoot, destViews);
-console.log("Copying global assets...");
-copyStaticFiles(path.join(srcViewsRoot, "assets"), destAssets);
+async function cleanup() {
+    log("Deleting dest directory...");
+    rimraf.sync(distDir);
 
-const services = fs.readdirSync(srcServicesRoot);
-for (const serviceDir of services) {
-    const serviceName = serviceDir.toLowerCase();
-    const serviceViews = path.join(srcServicesRoot, serviceName, "views");
-    const serviceAssets = path.join(serviceViews, "assets");
-    const serviceViewsDest = path.join(destViews, serviceName);
-    const serviceAssetsDest = path.join(destAssets, serviceName);
-    // A little duplication will happen here, but it's not a big deal... yet.
-    console.log(`Copying ${serviceName} views...`);
-    copyStaticFiles(serviceViews, serviceViewsDest);
-    console.log(`Copying ${serviceName} assets...`);
-    copyStaticFiles(serviceAssets, serviceAssetsDest);
+    log("Copying global views...");
+    copyStaticFiles(srcViewsRoot, destViews);
+    log("Copying global assets...");
+    copyStaticFiles(path.join(srcViewsRoot, "assets"), destAssets);
+
+    const services = fs.readdirSync(srcServicesRoot);
+    for (const serviceDir of services) {
+        const serviceName = serviceDir.toLowerCase();
+        const serviceViews = path.join(srcServicesRoot, serviceName, "views");
+        const serviceAssets = path.join(serviceViews, "assets");
+        const serviceViewsDest = path.join(destViews, serviceName);
+        const serviceAssetsDest = path.join(destAssets, serviceName);
+        // A little duplication will happen here, but it's not a big deal... yet.
+        log(`Copying ${serviceName} views...`);
+        copyStaticFiles(serviceViews, serviceViewsDest);
+        log(`Copying ${serviceName} assets...`);
+        copyStaticFiles(serviceAssets, serviceAssetsDest);
+    }
 }
 
 function copyStaticFiles(srcPath, destPath) {
@@ -56,3 +65,5 @@ function copyStaticFiles(srcPath, destPath) {
         }
     }
 }
+
+module.exports = cleanup;

@@ -4,6 +4,8 @@ import dotenv from "dotenv";
 // import MockLogger from "./mock-logger";
 import { ILogger } from "../logging/i-logger";
 import Logger from "../logging/logger";
+import { TransportTypes } from "../logging/transport-factory";
+import { LogLevels } from "../logging/config";
 
 export default class TestEnvWithConfig extends NodeEnvironment {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -18,6 +20,7 @@ export default class TestEnvWithConfig extends NodeEnvironment {
         const config = ConfigFactory.create("test");
         this.global.__configProvider = config;
         // this.global.__logger = new MockLogger();
+        Logger.addTransport(TransportTypes.Void, LogLevels.Debug, false);
         this.global.__logger = Logger.getLogger("test-logger");
     }
 

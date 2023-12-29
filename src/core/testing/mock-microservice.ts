@@ -14,9 +14,10 @@ export class MockMicroservice implements IMicroservice {
 
         router.get("/test_uuid", (req, res) => {
             if ("uuid" in req) {
-                this.uuid_received = true;
+                res.send("success");
+            } else {
+                res.status(400).send("failure");
             }
-            res.send("success");
         });
 
         router.get("/get_success_json", (req, res) => {

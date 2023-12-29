@@ -7,9 +7,11 @@ import winston, { transports, format } from "winston";
 export enum TransportTypes {
     DailyRotateFile,
     Console,
+    Void,
 }
 
 const dummyFilter = winston.format((msg) => msg);
+const emptyFilter = winston.format((msg) => false);
 
 export class TransportFactory {
     public static createTransport(
@@ -33,7 +35,12 @@ export class TransportFactory {
                     maxFiles: "14d",
                     datePattern: "YYYY-MM-DD",
                 });
-                transport.setMaxListeners(100);
+                break;
+            case TransportTypes.Void:
+                transport = new transports.Console({
+                    level,
+                    format: format.combine(emptyFilter()),
+                });
                 break;
             case TransportTypes.Console:
             default:
@@ -45,8 +52,9 @@ export class TransportFactory {
                         format.simple()
                     ),
                 });
-                transport.setMaxListeners(100);
         }
+
+        transport.setMaxListeners(100);
 
         return transport;
     }
