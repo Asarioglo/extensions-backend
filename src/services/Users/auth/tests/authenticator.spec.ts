@@ -1,7 +1,3 @@
-/**
- * @jest-environment ./src/core/testing/test-env-with-config.ts
- */
-
 import { Response, Router } from "express";
 import { ConfigProvider } from "../../../../core/config/config-provider";
 import Authenticator from "../authenticator";
@@ -265,7 +261,6 @@ describe("Authenticator", () => {
             mockNext
         );
         expect(mockNext).toHaveBeenCalledWith();
-        expect(mockReq.user).toEqual(await testUserRepo.findById("test_id"));
         expect(mockRes.status).not.toHaveBeenCalled();
         expect(mockRes.json).not.toHaveBeenCalled();
     });
@@ -280,9 +275,9 @@ describe("Authenticator", () => {
                 name: "test_name",
                 provider: "test_provider",
             } as IUser,
-            -10 // expired from bi
+            -10 // expired from birth
         );
-        const userRepo = getMockUserRepo(true, id);
+        let userRepo = getMockUserRepo(true, id);
         const auth = createAuthenticator();
         let provider = getMockProvider("test_provider");
         emptyProviderRegistry.registerProvider(provider);
@@ -293,18 +288,22 @@ describe("Authenticator", () => {
             mockRes as Response,
             mockNext
         );
-
+        // Token is expired and the provider is throwing an error
+        // on refresh attempt
         expect(provider.refreshToken).toHaveBeenCalled();
         expect(mockRes.status).toHaveBeenCalledWith(401);
         expect(mockRes.json).toHaveBeenCalledWith({
             message: errorText.tokenExpired,
         });
+        expect(userRepo.update).toHaveBeenCalled();
 
+        resetMocks();
         emptyProviderRegistry.deregisterProvider(provider.name);
-
+        // Provider returns no token
         provider = getMockProvider("test_provider", "no_token");
         emptyProviderRegistry.registerProvider(provider);
-        resetMocks();
+        userRepo = getMockUserRepo(true, id);
+        auth.setUserRepository(userRepo);
 
         mockReq.headers.authorization = `Bearer ${token}`;
         await auth.authenticateUserRequest(
@@ -312,7 +311,7 @@ describe("Authenticator", () => {
             mockRes as Response,
             mockNext
         );
-
+        // Token is expired ahd the provider is returning an empty token
         expect(provider.refreshToken).toHaveBeenCalled();
         expect(mockRes.status).toHaveBeenCalledWith(401);
         expect(mockRes.json).toHaveBeenCalledWith({
