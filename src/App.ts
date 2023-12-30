@@ -13,6 +13,7 @@ import path from "path";
 import expressLayouts from "express-ejs-layouts";
 import Logger from "./core/logging/logger";
 import { v4 as uuid4 } from "uuid";
+import session from "express-session";
 
 type MicroserviceEntry = [route: string, microservice: IMicroservice];
 
@@ -85,6 +86,15 @@ export class App {
         this._express.use(express.json());
         this._express.use(express.urlencoded({ extended: false }));
 
+        //------------ Express session Configuration ------------//
+        this._express.use(
+            session({
+                secret: "secret",
+                resave: true,
+                saveUninitialized: true,
+            })
+        );
+
         // ------------ View Engine configuration ------------//
         this._express.set("view engine", "ejs");
         this._express.set("views", "dist/views");
@@ -133,9 +143,13 @@ export class App {
         });
         for (const [route, microservice] of this._services) {
             const combined_route = path.join(this.ROUTE_PREFIX, route);
+
             this._express.use(
                 combined_route,
-                await microservice.launch(this._express, this._config)
+                await microservice.launch(
+                    this._express,
+                    this._config.clone().set("route_prefix", combined_route)
+                )
             );
         }
 

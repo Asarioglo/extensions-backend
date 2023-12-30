@@ -1,7 +1,10 @@
 import { IUser } from "../models/i-user";
 import jwt from "jsonwebtoken";
-import AbstractAuthProvider from "./abstract-auth-provider";
 import { ILogger } from "../../../core/logging/i-logger";
+import Text from "../views/assets/text/en-us.json";
+import IProviderRegistry from "../models/i-provider-registry";
+
+const errorText = Text.errors;
 
 export type TokenPayload = {
     userId: string;
@@ -12,12 +15,21 @@ export type TokenPayload = {
 export class TokenError extends Error {
     public type: Tokens.ErrorType;
     public user: IUser | null;
+    public additionalInfo: string = "";
 
-    constructor(type: Tokens.ErrorType, user: IUser | null, message: string) {
+    constructor(
+        type: Tokens.ErrorType,
+        user: IUser | null,
+        message: string,
+        additionalInfo?: string
+    ) {
         super(message);
         this.name = "TokenValidationError";
         this.type = type;
         this.user = user;
+        if (additionalInfo) {
+            this.additionalInfo = additionalInfo;
+        }
     }
 }
 
@@ -28,6 +40,7 @@ namespace Tokens {
         InvalidToken,
         NoProvider,
         RefreshError,
+        NoToken,
     }
 
     /**
@@ -40,7 +53,7 @@ namespace Tokens {
         preserveJti: boolean = false
     ) {
         if (!user || !user.id) {
-            throw new Error("Invalid user provided");
+            throw new Error(`Invalid user provided to createToken ${user}`);
         }
         if (!durationSeconds) {
             durationSeconds = 60 * 60; // 1 hour
@@ -48,7 +61,7 @@ namespace Tokens {
 
         const tokenID = preserveJti
             ? user.jwtId
-            : jwt.sign({ userId: user.id }, secret);
+            : jwt.sign({ userId: user.id, salt: Math.random() }, secret);
 
         const payload: TokenPayload = {
             userId: user.id,
@@ -81,13 +94,51 @@ namespace Tokens {
             throw new TokenError(
                 Tokens.ErrorType.OutdatedToken,
                 user,
-                "Token is no longer valid"
+                "Token is no longer valid",
+                "The jti of token does not match the jti of the user"
             );
         }
         return true;
     }
 
-    export function decodeToken(
+    /**
+     * Only decodes the token, does not validate it. Be careful not to use this to
+     * authenticate a user, as it does not check whether the token is valid.
+     */
+    export function decodeToken(token: string): TokenPayload {
+        try {
+            const decoded = jwt.decode(token) as TokenPayload;
+            if (!decoded) {
+                throw new TokenError(
+                    Tokens.ErrorType.InvalidToken,
+                    null,
+                    errorText.invalidToken,
+                    "Decoded object is null"
+                );
+            }
+            return decoded;
+        } catch (e: any /* eslint-disable-line */) {
+            throw new TokenError(
+                Tokens.ErrorType.InvalidToken,
+                null,
+                errorText.invalidToken,
+                `Token could not be decoded: ${e.message}`
+            );
+        }
+    }
+
+    export function testTokenPayload(payload: TokenPayload) {
+        if (!payload.userId || !payload.jti) {
+            throw new TokenError(
+                Tokens.ErrorType.InvalidToken,
+                null,
+                errorText.invalidToken,
+                "Token payload is missing userId or jti"
+            );
+        }
+    }
+
+    export function validateToken(
         token: string,
         secret: string,
         logger: ILogger
@@ -102,26 +153,35 @@ namespace Tokens {
                 throw new TokenError(
                     Tokens.ErrorType.ExpiredToken,
                     null,
-                    "Token expired, needs to be refreshed"
+                    errorText.tokenExpired,
+                    e.message
                 );
             } else {
                 logger.error(e.message);
-                throw new Error(`Token validation failed: ${e.message}`);
+                throw new TokenError(
+                    Tokens.ErrorType.InvalidToken,
+                    null,
+                    errorText.invalidToken,
+                    `Token validation failed: ${e.message}`
+                );
             }
         }
     }
 
-    export async function refreshProviderToken(
+    export async function refreshToken(
         user: IUser,
-        providers: AbstractAuthProvider[],
+        providerRegistry: IProviderRegistry,
+        secret: string,
+        durationSeconds: number,
         logger: ILogger
     ) {
-        const provider = providers.find((p) => p.name === user.provider);
+        const provider = providerRegistry.getProviderByName(user.provider);
         if (!provider) {
             throw new TokenError(
-                Tokens.ErrorType.NoProvider,
+                Tokens.ErrorType.RefreshError,
                 user,
-                "Provider could not be determined"
+                errorText.couldNotRefreshToken,
+                "Provider could not be found for user"
             );
         }
         let newAccessToken: string | null = null;
@@ -131,22 +191,33 @@ namespace Tokens {
             throw new TokenError(
                 Tokens.ErrorType.RefreshError,
                 user,
-                "Error refreshing token"
+                errorText.couldNotRefreshToken,
+                `Error refreshing token ${refreshError.message}`
             );
         }
         if (!newAccessToken) {
             // Should not happen
             logger.warn(
-                `Weird, this shouldn't happen. Refreshing token didn't
-                fail, but no new token was returned`
+                `Weird, this shouldn't happen. Refreshing token didn't fail, but no new token was returned`
             );
             throw new TokenError(
                 Tokens.ErrorType.RefreshError,
                 user,
-                "Error refreshing token"
+                errorText.couldNotRefreshToken,
+                "Provider returned no new token"
             );
         }
-        return newAccessToken;
+        const { token, id } = Tokens.createToken(
+            secret,
+            user,
+            durationSeconds,
+            false
+        );
+        return {
+            newProviderToken: newAccessToken,
+            newJWT: token,
+            newJWTId: id,
+        };
     }
 }
 

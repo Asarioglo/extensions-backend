@@ -2,20 +2,19 @@
 import passport from "passport";
 import { IUser } from "../models/i-user";
 import IUserRepository from "../database/base/i-user-repository";
-import AbstractAuthProvider from "./abstract-auth-provider";
-import { ILogger } from "../../../core/logging/i-logger";
+import Logger from "../../../core/logging/logger";
 
 type SerializeDoneFn = (err: Error | null, id?: string) => void;
 type DeserializeDoneFn = (err: Error | null, user?: IUser | null) => void;
 
 export default function (
-    passport: passport.PassportStatic,
     userRepo: IUserRepository,
-    providers: AbstractAuthProvider[],
-    logger: ILogger
+    // to support injecting a mock passport for testing
+    target_passport: passport.PassportStatic = passport
 ) {
+    const logger = Logger.getLogger("config-passport");
     logger.debug("Configuring passport");
-    passport.serializeUser<string>(
+    target_passport.serializeUser<string>(
         (user: Express.User, done: SerializeDoneFn) => {
             if ("id" in user && typeof user.id === "string")
                 done(null, user.id);
@@ -23,7 +22,7 @@ export default function (
         }
     );
 
-    passport.deserializeUser((id: string, done: DeserializeDoneFn) => {
+    target_passport.deserializeUser((id: string, done: DeserializeDoneFn) => {
         // logger.debug("Deserializing user: ", id);
         userRepo.findById(id, function (err: Error | null, user: IUser | null) {
             if (err) {
@@ -32,12 +31,5 @@ export default function (
             }
             done(err, user);
         });
-    });
-
-    // Make sure this is called after the registry providers
-    // have been initialized
-    providers.forEach((provider: AbstractAuthProvider) => {
-        // logger.info("Adding passport strategy for provider: ", provider.name);
-        provider.addPassportStrategy(passport);
     });
 }

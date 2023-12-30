@@ -2,21 +2,22 @@ import { Router } from "express";
 import GetUser from "./get-user";
 import IUserRepository from "../database/base/i-user-repository";
 import about from "./about";
-import login from "./login";
 import Logger from "../../../core/logging/logger";
+import IAuthenticator from "../models/i-authenticator";
+import { IConfigProvider } from "../../../core/interfaces/i-config-provider";
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export default function (userRepo: IUserRepository) {
-    const router = Router();
-
+export const start = (
+    config: IConfigProvider,
+    userRepo: IUserRepository,
+    authenticator: IAuthenticator
+) => {
     const _logger = Logger.getLogger("users-api");
     _logger.debug("registering users routes");
+    const apiRouter = Router();
 
-    // AUTH
-    router.get("/login", login);
+    apiRouter.get("/me", GetUser);
+    apiRouter.get("/about", about);
 
-    router.get("/me", GetUser);
-    router.get("/about", about);
-
-    return router;
-}
+    return apiRouter;
+};

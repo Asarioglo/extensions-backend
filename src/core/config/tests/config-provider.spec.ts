@@ -34,4 +34,13 @@ describe("ConfigProvider", () => {
         expect(provider.get("baz", "qux")).toEqual("qux");
         expect(provider.get("baz")).toEqual(null);
     });
+
+    it("Should clone the config provider", () => {
+        provider.set("foo", "bar");
+        const clone = provider.clone();
+        expect(clone.get("foo")).toEqual("bar");
+        clone.set("foo", "baz");
+        expect(clone.get("foo")).toEqual("baz");
+        expect(provider.get("foo")).toEqual("bar");
+    });
 });

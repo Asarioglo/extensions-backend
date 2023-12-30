@@ -1,0 +1,30 @@
+<div class="centered-page-container">
+    <script>
+        function loaded() {
+            if (chrome && chrome.runtime) {
+                chrome.runtime.sendMessage("<%= extensionId %>", {
+                    action: "loginSuccess",
+                    user: {
+                        token: "<%= auth_token %>",
+                    },
+                });
+            } else {
+                console.log("Chrome runtime not found");
+            }
+            localStorage.setItem("auth_token", "<%= auth_token %>");
+        }
+    </script>
+    <div class="logo-container">
+        <img src="/assets/icons/128.png" class="main-logo" />
+    </div>
+    <!-- <h2 class="text-center mb-3">Dat-Empower Login</h2> -->
+    <h4 class="heading-text"><%= loginSuccessHeading %></h3>
+    <div class="subheading-text"><%= loginSuccessSubheading %></div>
+
+    <button style="margin-top: 3em" class="btn btn-success success-button" onClick="closeMe()"><%= doneButtonText %></button>
+
+    <img
+        onLoad="loaded();"
+        src="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=="
+    />
+</div>

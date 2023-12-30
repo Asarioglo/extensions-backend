@@ -2,12 +2,10 @@
  * @jest-environment ./src/core/testing/test-env-with-config.ts
  */
 
-import configurePassport from "../passport";
+import configurePassport from "../configure-passport";
 import IUserRepository from "../../database/base/i-user-repository";
 import { IUser, TestUserData } from "../../models/i-user";
 import { RepoCallback } from "../../../../core/interfaces/i-repository";
-import AbstractAuthProvider from "../abstract-auth-provider";
-import { ILogger } from "../../../../core/logging/i-logger";
 
 class MockPassport {
     static serializeUser = jest.fn();
@@ -29,18 +27,6 @@ class TestPassport {
     static deserializeUser(fn: DeserializeUserFn) {
         TestPassport.deserializeUserFn = fn;
     }
-}
-
-class MockAuthProvider extends AbstractAuthProvider {
-    constructor() {
-        super("mock_provider");
-    }
-    // eslint-disable-next-line no-unused-vars
-    addPassportStrategy = jest.fn();
-
-    addLoginRoutes = jest.fn();
-
-    refreshToken = jest.fn();
 }
 
 class MockUserRepo implements IUserRepository {
@@ -83,11 +69,9 @@ describe("passport", () => {
 
     it("should call serialize and deserialize user functions", () => {
         configurePassport(
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            MockPassport as any,
             new MockUserRepo(),
-            [],
-            globalThis.__logger as ILogger
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            MockPassport as any
         );
         expect(MockPassport.serializeUser).toHaveBeenCalled();
         expect(MockPassport.deserializeUser).toHaveBeenCalled();
@@ -95,11 +79,9 @@ describe("passport", () => {
 
     it("should serialize and deserialize user by ID", (done) => {
         configurePassport(
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            TestPassport as any,
             new MockUserRepo(),
-            [],
-            globalThis.__logger as ILogger
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            TestPassport as any
         );
         const xpressDone = jest.fn();
         TestPassport.serializeUserFn?.(TestUserData, xpressDone);
@@ -112,24 +94,5 @@ describe("passport", () => {
             done();
         };
         TestPassport.deserializeUserFn?.(TestUserData.id, doneAsyncCallback);
-    });
-
-    it("should iterate through providers and add passport strategies", () => {
-        const providers = [new MockAuthProvider(), new MockAuthProvider()];
-        configurePassport(
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            TestPassport as any,
-            new MockUserRepo(),
-            providers,
-            globalThis.__logger as ILogger
-        );
-        expect(providers[0].addPassportStrategy).toHaveBeenCalled();
-        expect(providers[0].addPassportStrategy).toHaveBeenCalledWith(
-            TestPassport
-        );
-        expect(providers[1].addPassportStrategy).toHaveBeenCalled();
-        expect(providers[1].addPassportStrategy).toHaveBeenCalledWith(
-            TestPassport
-        );
     });
 });

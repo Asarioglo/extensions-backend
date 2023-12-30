@@ -1,67 +1,48 @@
 import { Application, Router } from "express";
 import { IMicroservice } from "../../core/interfaces/i-microservice";
-import Api from "./api";
-import mongoose from "mongoose";
+import { start as startAPI } from "./api";
 import MongoUserRepo from "./database/mongo/mongo-user-repo";
-import { ILogger } from "../../core/logging/i-logger";
 import { IConfigProvider } from "../../core/interfaces/i-config-provider";
 import Logger from "../../core/logging/logger";
-// import configurePassport from "./auth/passport";
-// import passport from "passport";
+import { start as startAuth } from "./auth";
+import { start as startDB } from "./database";
+import path from "path";
 
 export class UsersService implements IMicroservice {
     async launch(app: Application, config: IConfigProvider): Promise<Router> {
-        const logger = Logger.getLogger("users.index.ts");
+        const logger = Logger.getLogger("users/index.ts");
 
-        const connection = await connectDB(config, logger);
+        logger.debug("starting users service");
+        const router = Router();
 
+        logger.debug("Starting the database connection");
+        const connection = await startDB(config);
+
+        logger.debug("Starting the authenticator");
         const userRepo = new MongoUserRepo(connection);
+        const authConfig = config
+            .clone()
+            .set(
+                "route_prefix",
+                path.join(config.get("route_prefix", ""), "auth")
+            );
+        const { authenticator, authRouter } = startAuth(
+            authConfig,
+            userRepo,
+            app
+        );
+        router.use("/auth", authRouter);
 
-        // configurePassport(passport, userRepo, [], logger);
-        // app.use(passport.initialize());
-        // app.use(passport.session());
+        logger.debug("Starting the API");
+        const apiConfig = config
+            .clone()
+            .set(
+                "route_prefix",
+                path.join(config.get("route_prefix", ""), "api")
+            );
+        const apiRouter = startAPI(apiConfig, userRepo, authenticator);
+        router.use("/api", apiRouter);
 
-        return Api(userRepo);
+        return router;
     }
 }
-
-const connectDB = async (
-    config: IConfigProvider,
-    logger: ILogger
-): Promise<mongoose.Connection> => {
-    const conn_str = config.get("users_mongo_uri");
-    if (!conn_str) {
-        logger.error(
-            "Missing users_mongo_uri. Check that the config provider and the envvars are set correctly."
-        );
-        throw new Error("Missing users_mongo_uri");
-    }
-    const dbName = config.get("users_mongo_db_name");
-    if (!dbName) {
-        logger.error(
-            "Missing users_mongo_db_name. Check that the config provider and the envvars are set correctly."
-        );
-        throw new Error("Missing users_mongo_db_name");
-    }
-
-    logger.debug("Connecting to MongoDB", {
-        conn_str: conn_str.split("@")[1], // to not console senstiive info
-        dbName,
-    });
-
-    let connection: mongoose.Connection;
-    try {
-        connection = await mongoose
-            .createConnection(conn_str, { dbName })
-            .asPromise();
-    } catch (err) {
-        logger.error("Error connecting to MongoDB", { err });
-        throw err;
-    }
-
-    if (!connection) {
-        logger.error("Connection to MongoDB failed");
-        throw new Error("Connection to MongoDB failed");
-    }
-    return connection;
-};

@@ -67,3 +67,14 @@ function copyStaticFiles(srcPath, destPath) {
 }
 
 module.exports = cleanup;
+
+// Add a check to see if the script is being run directly
+if (require.main === module) {
+    cleanup()
+        .then(() => {
+            console.log("Cleanup process completed.");
+        })
+        .catch((error) => {
+            console.error("Error during cleanup:", error);
+        });
+}

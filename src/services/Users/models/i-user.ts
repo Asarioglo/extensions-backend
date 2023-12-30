@@ -1,13 +1,13 @@
 export interface IUser {
     _id?: unknown;
     id: string;
-    jwtId: string;
+    jwtId: string | null;
     name: string;
     email: string;
     provider: string;
     providerId: string;
-    token: string;
-    refreshToken: string;
+    token: string | null;
+    refreshToken: string | null;
     verified: boolean;
     alias: string;
     lastActive: Date;

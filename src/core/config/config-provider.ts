@@ -1,4 +1,5 @@
 import { IConfigProvider } from "../interfaces/i-config-provider";
+import Logger from "../logging/logger";
 
 export type EnvVarMapping = [
     envvar: string,
@@ -8,6 +9,7 @@ export type EnvVarMapping = [
 
 export class ConfigProvider implements IConfigProvider {
     config = {};
+    protected _logger = Logger.getLogger("config-provider");
 
     get(key: string, default_value: string = null): string {
         if (this.config[key] === undefined) {
@@ -18,6 +20,7 @@ export class ConfigProvider implements IConfigProvider {
 
     set(key: string, value: string) {
         this.config[key] = value;
+        return this;
     }
 
     from_mappings(mappings: EnvVarMapping[]) {
@@ -28,5 +31,11 @@ export class ConfigProvider implements IConfigProvider {
                 this.set(config_name, default_value);
             }
         });
+    }
+
+    clone(): ConfigProvider {
+        const clone = new ConfigProvider();
+        clone.config = { ...this.config };
+        return clone;
     }
 }
