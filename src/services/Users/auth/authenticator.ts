@@ -19,6 +19,7 @@ export default class Authenticator implements IAuthenticator {
     private _jwtSecret: string;
     private _logger: ILogger;
     private _tokenLifetime: number = 60 * 60; // 1 hour
+    private _oneTimeTokenLifetime: number = 60 * 2; // 2 minutes
     private _providerRegistry: IProviderRegistry;
 
     constructor(
@@ -53,7 +54,7 @@ export default class Authenticator implements IAuthenticator {
             }
         }
 
-        this._providerRegistry.initialize(passportInstance, router);
+        this._providerRegistry.initialize(passportInstance, router, this);
     }
 
     getTokenLifetime(): number {
@@ -137,6 +138,15 @@ export default class Authenticator implements IAuthenticator {
                 error instanceof TokenError &&
                 error.type === Tokens.ErrorType.ExpiredToken
             ) {
+                const payload = Tokens.decodeToken(tkn);
+                if (payload.oneTimeToken) {
+                    throw new TokenError(
+                        Tokens.ErrorType.InvalidToken,
+                        user,
+                        errorText.oneTimeTokenExpired,
+                        "One time token expired"
+                    );
+                }
                 return await this._refreshToken(user);
             } else {
                 // Should probably check for network errors, etc. But for now this blanket will
@@ -176,6 +186,10 @@ export default class Authenticator implements IAuthenticator {
                 if (parts[1] !== null && parts[1].length > 0) {
                     token = parts[1];
                 }
+            }
+        } else if (req.query && req.query.ot_code) {
+            if (typeof req.query.ot_code === "string") {
+                token = req.query.ot_code as string;
             }
         }
         // TODO: Maybe some day
@@ -219,6 +233,35 @@ export default class Authenticator implements IAuthenticator {
             );
         }
         return user;
+    }
+
+    async createAuthToken(user: IUser): Promise<string> {
+        const { token, id } = Tokens.createToken(
+            this._jwtSecret,
+            user,
+            this._tokenLifetime
+        );
+        await this._userRepo.update(user, { jwtId: id });
+        return token;
+    }
+
+    /**
+     * Generates a short lived code which can be used to authenticate a request
+     * which is coming from a popup, such as accoutn management, auxilary user auth,
+     * because the popup and the extension don't share a domain.
+     * @param {int} _lifetime - Used for testing
+     */
+    async createOneTimeToken(user: IUser, _lifetime?: number): Promise<string> {
+        // Later we will store the token in the database and check that
+        // it's used only once. For now, we just check that it's valid.
+        const { token } = Tokens.createToken(
+            this._jwtSecret,
+            user,
+            _lifetime !== undefined ? _lifetime : this._oneTimeTokenLifetime,
+            true,
+            { oneTimeToken: true }
+        );
+        return token;
     }
 
     async authenticateUserRequest(

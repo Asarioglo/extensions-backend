@@ -10,6 +10,7 @@ export type TokenPayload = {
     userId: string;
     exp: number;
     jti: string;
+    [key: string]: unknown;
 };
 
 export class TokenError extends Error {
@@ -50,7 +51,8 @@ namespace Tokens {
         secret: string,
         user: IUser,
         durationSeconds?: number,
-        preserveJti: boolean = false
+        preserveJti: boolean = false,
+        additionalPayload: Record<string, unknown> = {}
     ) {
         if (!user || !user.id) {
             throw new Error(`Invalid user provided to createToken ${user}`);
@@ -64,6 +66,7 @@ namespace Tokens {
             : jwt.sign({ userId: user.id, salt: Math.random() }, secret);
 
         const payload: TokenPayload = {
+            ...additionalPayload,
             userId: user.id,
             exp: Math.floor(Date.now() / 1000) + durationSeconds,
             jti: tokenID,
@@ -136,6 +139,7 @@ namespace Tokens {
                 "Token payload is missing userId or jti"
             );
         }
+        return true;
     }
 
     export function validateToken(

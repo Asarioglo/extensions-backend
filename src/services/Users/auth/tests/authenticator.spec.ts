@@ -1,3 +1,7 @@
+/**
+ * @jest-environment ./src/core/testing/test-env-with-config.ts
+ */
+
 import { Response, Router } from "express";
 import { ConfigProvider } from "../../../../core/config/config-provider";
 import Authenticator from "../authenticator";
@@ -83,10 +87,18 @@ describe("Authenticator", () => {
         const p2 = emptyProviderRegistry.getProviderByName("test_provider2");
         expect(p1).toBeTruthy();
         expect(p1?.initialize).toHaveBeenCalled();
-        expect(p1?.initialize).toHaveBeenCalledWith(testPassport, testRouter);
+        expect(p1?.initialize).toHaveBeenCalledWith(
+            testPassport,
+            testRouter,
+            authenticator
+        );
         expect(p2).toBeTruthy();
         expect(p2?.initialize).toHaveBeenCalled();
-        expect(p2?.initialize).toHaveBeenCalledWith(testPassport, testRouter);
+        expect(p2?.initialize).toHaveBeenCalledWith(
+            testPassport,
+            testRouter,
+            authenticator
+        );
     });
 
     /**
@@ -365,5 +377,72 @@ describe("Authenticator", () => {
         // update last active
         expect(userRepo.update).toHaveBeenCalled();
         expect((mockReq.user as IUser).jwtId).toBe(id);
+    });
+
+    it("Should create a token and save JTI to user", async () => {
+        emptyConfigProvidr.set("jwt_secret", "test_secret");
+        const auth = createAuthenticator();
+        const userRepo = getMockUserRepo(true, "my_jti");
+        auth.setUserRepository(userRepo);
+        const token = await auth.createAuthToken(
+            (await userRepo.findById("test_id")) as IUser
+        );
+        expect(token).toBeTruthy();
+        const decoded = Tokens.decodeToken(token);
+        expect(decoded.jti).not.toBe("my_jti");
+        expect(userRepo.update).toHaveBeenCalled();
+        mockReq.headers.authorization = `Bearer ${token}`;
+        await auth.authenticateUserRequest(
+            mockReq,
+            mockRes as Response,
+            mockNext
+        );
+        expect(mockNext).toHaveBeenCalled();
+    });
+
+    it("Should create a valid one time token and validate it", async () => {
+        emptyConfigProvidr.set("jwt_secret", "test_secret");
+        const auth = createAuthenticator();
+        const userRepo = getMockUserRepo(true, "my_jti");
+        auth.setUserRepository(userRepo);
+        const token = await auth.createOneTimeToken(
+            (await userRepo.findById("test_id")) as IUser
+        );
+        expect(token).toBeTruthy();
+        const decoded = Tokens.decodeToken(token);
+        expect(decoded.jti).toBe("my_jti");
+        expect(userRepo.update).not.toHaveBeenCalled();
+        mockReq.query = { ot_code: token };
+        await auth.authenticateUserRequest(
+            mockReq,
+            mockRes as Response,
+            mockNext
+        );
+        expect(mockNext).toHaveBeenCalled();
+    });
+
+    it("Should not attempt to refresh a one time token", async () => {
+        emptyConfigProvidr.set("jwt_secret", "test_secret");
+        const auth = createAuthenticator();
+        const userRepo = getMockUserRepo(true, "my_jti");
+        const test_user = (await userRepo.findById("my_id")) as IUser;
+        const mockProvider = getMockProvider(test_user?.provider, "success");
+        emptyProviderRegistry.registerProvider(mockProvider);
+        auth.setUserRepository(userRepo);
+        const token = await auth.createOneTimeToken(
+            (await userRepo.findById("test_id")) as IUser,
+            -1 // expired at birth
+        );
+        mockReq.query = { ot_code: token };
+        await auth.authenticateUserRequest(
+            mockReq,
+            mockRes as Response,
+            mockNext
+        );
+        expect(mockRes.status).toHaveBeenCalledWith(401);
+        expect(mockRes.json).toHaveBeenCalledWith({
+            message: errorText.oneTimeTokenExpired,
+        });
+        expect(mockProvider.refreshToken).not.toHaveBeenCalled();
     });
 });

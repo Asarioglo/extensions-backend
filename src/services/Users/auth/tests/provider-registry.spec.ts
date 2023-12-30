@@ -6,7 +6,8 @@ import { Router } from "express";
 import IProviderRegistry from "../../models/i-provider-registry";
 import IDProviderRegistry from "../id-providers/id-provider-registry";
 import { MockIDProvider } from "./mocks";
-import passport from "passport";
+import passport, { authenticate } from "passport";
+import { getMockAuthenticator } from "../../testing/get-mock-authenticator";
 
 describe("ProviderRegistry", () => {
     let providerRegistry: IProviderRegistry | null;
@@ -40,15 +41,25 @@ describe("ProviderRegistry", () => {
         );
         const passport = {};
         const router = {};
+        const authenticator = getMockAuthenticator();
         providerRegistry?.initialize(
             passport as passport.PassportStatic,
-            router as Router
+            router as Router,
+            authenticator
         );
         const provider = providerRegistry?.getProviderByName("test_provider");
         expect(provider).toBeTruthy();
-        expect(provider?.initialize).toHaveBeenCalledWith(passport, router);
+        expect(provider?.initialize).toHaveBeenCalledWith(
+            passport,
+            router,
+            authenticator
+        );
         const provider1 = providerRegistry?.getProviderByName("test_provider2");
         expect(provider1).toBeTruthy();
-        expect(provider1?.initialize).toHaveBeenCalledWith(passport, router);
+        expect(provider1?.initialize).toHaveBeenCalledWith(
+            passport,
+            router,
+            authenticator
+        );
     });
 });

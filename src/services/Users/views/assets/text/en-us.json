@@ -18,6 +18,7 @@
         "invalidToken": "Invalid token provided, can't authenticate",
         "anotherTokenIssued": "Another device has logged in with this account. Please login again.",
         "tokenExpired": "Seems like your session has expired. Please login again.",
-        "couldNotRefreshToken": "Seems like your session has expired. Please login again."
+        "couldNotRefreshToken": "Seems like your session has expired. Please login again.",
+        "oneTimeTokenExpired": "This attempt has expired. Please try again."
     }
 }

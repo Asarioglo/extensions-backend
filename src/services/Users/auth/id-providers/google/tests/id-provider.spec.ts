@@ -4,6 +4,7 @@ import IUserRepository from "../../../../database/base/i-user-repository";
 import { IConfigProvider } from "../../../../../../core/interfaces/i-config-provider";
 import * as express from "express";
 import { ConfigProvider } from "../../../../../../core/config/config-provider";
+import { getMockAuthenticator } from "../../../../testing/get-mock-authenticator";
 
 jest.mock("express", () => {
     const mockRouter = {
@@ -64,7 +65,8 @@ describe("GoogleIDProvider", () => {
 
         googleIDProvider.initialize(
             mockPassport as passport.PassportStatic,
-            mockRouter
+            mockRouter,
+            getMockAuthenticator()
         );
 
         // Assert that GoogleStrategy is added
@@ -77,7 +79,7 @@ describe("GoogleIDProvider", () => {
     it("should add login routes", () => {
         const googleIDProvider = new GoogleIDProvider(userRepo, config);
 
-        googleIDProvider.addLoginRoutes(mockRouter);
+        googleIDProvider.addLoginRoutes(mockRouter, getMockAuthenticator());
 
         // Assert that the login route is added
         expect(mockRouter.get).toHaveBeenCalledWith(

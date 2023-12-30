@@ -2,6 +2,7 @@ import passport from "passport";
 import IIDProvider from "../../models/i-id-provider";
 import { Router } from "express";
 import IProviderRegistry from "../../models/i-provider-registry";
+import IAuthenticator from "../../models/i-authenticator";
 
 class IDProviderRegistry implements IProviderRegistry {
     private providers: IIDProvider[] = [];
@@ -29,10 +30,11 @@ class IDProviderRegistry implements IProviderRegistry {
 
     public initialize(
         passportInstance: passport.PassportStatic,
-        router: Router
+        router: Router,
+        authenticator: IAuthenticator
     ): void {
         this.providers.forEach((provider) => {
-            provider.initialize(passportInstance, router);
+            provider.initialize(passportInstance, router, authenticator);
         });
     }
 }

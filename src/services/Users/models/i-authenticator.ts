@@ -1,4 +1,5 @@
 import { NextFunction, Request, Response } from "express";
+import { IUser } from "./i-user";
 
 export default interface IAuthenticator {
     authenticateUserRequest(
@@ -8,4 +9,8 @@ export default interface IAuthenticator {
     ): Promise<void>;
 
     setUserRepository(userRepo: unknown): void;
+
+    createAuthToken(user: IUser): Promise<string>;
+
+    createOneTimeToken(user: IUser): Promise<string>;
 }

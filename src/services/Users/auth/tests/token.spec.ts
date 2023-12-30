@@ -161,11 +161,7 @@ describe("Tokens", () => {
         );
         const { token, id } = tokenObj;
         expect(id).toBe(mockUser.jwtId);
-        const payload = Tokens.validateToken(
-            token,
-            secret,
-            globalThis.__logger as ILogger
-        );
+        const payload = Tokens.decodeToken(token);
         expect(payload.jti).toBe(id);
     });
 
@@ -194,5 +190,20 @@ describe("Tokens", () => {
         expect(newProviderToken).toBeTruthy();
         expect(newJWT).toBeTruthy();
         expect(newJWTId).toBeTruthy();
+    });
+
+    it("Should honor additional payload", async () => {
+        const { token } = Tokens.createToken(
+            secret,
+            mockUser as IUser,
+            undefined,
+            true,
+            { foo: "bar" }
+        );
+        const payload = Tokens.decodeToken(token);
+        expect(payload).toBeTruthy();
+        expect(payload).toHaveProperty("foo");
+        expect(() => Tokens.testTokenPayload(payload)).not.toThrow();
+        expect(Tokens.testTokenPayload(payload)).toBe(true);
     });
 });

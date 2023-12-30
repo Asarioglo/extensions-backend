@@ -1,5 +1,5 @@
 import IIDProvider from "../../models/i-id-provider";
-import { NextFunction, Response } from "express";
+import { NextFunction } from "express";
 
 export class MockIDProvider implements IIDProvider {
     public name: string;

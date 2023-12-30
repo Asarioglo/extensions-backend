@@ -9,8 +9,9 @@ import { Router } from "express";
 import { IConfigProvider } from "../../../../../core/interfaces/i-config-provider";
 import Logger from "../../../../../core/logging/logger";
 import { getMainUserAuthCallback } from "./main-auth-cb";
-import { OAuth2Client } from "google-auth-library";
+import { OAuth2Client, auth } from "google-auth-library";
 import { getMainSuccessRedirectHandler } from "./main-success-redirect-handler";
+import IAuthenticator from "../../../models/i-authenticator";
 
 export type GoogleCredentials = {
     clientID: string;
@@ -51,13 +52,17 @@ export default class GoogleIDProvider implements IIDProvider {
 
     initialize(
         passportInstance: passport.PassportStatic,
-        router: Router
+        router: Router,
+        authenticator: IAuthenticator
     ): void {
-        this.addLoginRoutes(router);
-        this.addPassportStrategies(passportInstance);
+        this.addLoginRoutes(router, authenticator);
+        this.addPassportStrategies(passportInstance, authenticator);
     }
 
-    addPassportStrategies(passportInstance: passport.PassportStatic) {
+    addPassportStrategies(
+        passportInstance: passport.PassportStatic,
+        authenticator: IAuthenticator // eslint-disable-line
+    ) {
         passportInstance.use(
             "google_main",
             new GoogleStrategy(
@@ -72,7 +77,7 @@ export default class GoogleIDProvider implements IIDProvider {
         );
     }
 
-    addLoginRoutes(router: Router) {
+    addLoginRoutes(router: Router, authenticator: IAuthenticator) {
         router.get(
             "/google",
             passport.authenticate("google_main", {
@@ -111,7 +116,7 @@ export default class GoogleIDProvider implements IIDProvider {
             getMainSuccessRedirectHandler(
                 this._config,
                 this._logger,
-                this._userRepo
+                authenticator
             )
         );
     }
